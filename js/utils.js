@@ -34,6 +34,9 @@ export function isCriticalEvent(event) {
     const level = String(event.alertLevel || "").trim().toLowerCase();
     return level === "warning" || level === "watch";
   }
+  if (event.type === "civil_defense") {
+    return event.severity === "critical";
+  }
   if (FLOOD_TYPES.has(event.type)) {
     return event.riskLevel === "high";
   }
@@ -119,6 +122,7 @@ export function filterEvents(events, filters, now = Date.now()) {
     if (floodTypes.has(event.type) && !filters.floods) return false;
     if (event.type === "fire" && !filters.fires) return false;
     if (event.type === "volcano" && !filters.volcanoes) return false;
+    if (event.type === "civil_defense" && !filters.civilDefense) return false;
     if (event.type === "earthquake" && Number(event.magnitude) < Number(filters.minMagnitude)) return false;
     return withinPeriod(event.timestamp, filters.period, now);
   });

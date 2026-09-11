@@ -7,7 +7,8 @@ const quota = {
   solar: { calls: 0, limit: Infinity, label: "NOAA SWPC" },
   floods: { calls: 0, limit: Infinity, label: "Enchentes" },
   fires: { calls: 0, limit: Infinity, label: "INPE Queimadas" },
-  volcanoes: { calls: 0, limit: Infinity, label: "USGS VHP" }
+  volcanoes: { calls: 0, limit: Infinity, label: "USGS VHP" },
+  civilDefense: { calls: 0, limit: Infinity, label: "CEMADEN" }
 };
 
 let lastQuotaResetDay = new Date().toDateString();

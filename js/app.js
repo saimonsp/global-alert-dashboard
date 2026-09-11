@@ -6,6 +6,7 @@ import { buildClimateExtremes, fetchInmetWindAndRain, fetchWindAndRain, mergeReg
 import { fetchFloodData, filterFloodEvents } from "./floods.js";
 import { fetchKpIndex, fetchSolarActivity } from "./solar.js";
 import { fetchFires, shouldPollFires } from "./fires.js";
+import { fetchCivilDefenseAlerts, shouldPollCivilDefense } from "./cemaden.js";
 import { initAlertSystem, checkRegionalAlerts, playAlarm, sendNotification, getUserLocation, setSoundEnabled } from "./alerts.js";
 import { trackCall, checkQuotaReset } from "./quota.js";
 import { elements, readFilters, refreshIcons, renderAlerts, renderBulletin, renderClimateExtremes, renderSolar, renderStats, setApiStatus, setLoading } from "./ui.js";
@@ -21,6 +22,7 @@ const state = {
   floods: [],
   fires: [],
   volcanoes: [],
+  civilDefense: [],
   offline: [],
   climateExtremes: null,
   solar: null,
@@ -33,6 +35,7 @@ const state = {
     floods: false,
     fires: false,
     volcanoes: false,
+    civilDefense: false,
     minMagnitude: 2.5,
     period: "24h"
   },
@@ -47,7 +50,8 @@ const state = {
     solar: "idle",
     floods: "idle",
     fires: "idle",
-    volcanoes: "idle"
+    volcanoes: "idle",
+    civilDefense: "idle"
   }
 };
 
@@ -57,6 +61,7 @@ let weatherTimer = null;
 let solarTimer = null;
 let floodTimer = null;
 let volcanoTimer = null;
+let civilDefenseTimer = null;
 let map = null;
 let zoomDebounce = null;
 let tvApi = null;
@@ -65,7 +70,7 @@ let offlineApi = null;
 
 function visibleEvents() {
   return filterEvents(
-    [...state.earthquakes, ...state.storms, ...state.winds, ...state.rains, ...state.floods, ...state.fires, ...state.volcanoes, ...state.offline],
+    [...state.earthquakes, ...state.storms, ...state.winds, ...state.rains, ...state.floods, ...state.fires, ...state.volcanoes, ...state.civilDefense, ...state.offline],
     state.filters
   );
 }
@@ -263,6 +268,19 @@ async function updateFires() {
   }
 }
 
+async function updateCivilDefense() {
+  if (!shouldPollCivilDefense() && state.civilDefense.length > 0) return;
+  setApiStatus("civilDefense", "loading");
+  try {
+    const alerts = await fetchCivilDefenseAlerts();
+    state.civilDefense = alerts;
+    setApiStatus("civilDefense", alerts.length > 0 ? "online" : "idle");
+    trackCall("civilDefense");
+  } catch {
+    setApiStatus("civilDefense", "error");
+  }
+}
+
 const isInBrazilView = bounds => bounds.intersects(BRAZIL_BOUNDS_LATLNG);
 const INMET_COOLDOWN_MS = 60 * 60 * 1000;
 const OPEN_METEO_COOLDOWN_MS = 30 * 60 * 1000;
@@ -422,6 +440,7 @@ async function refreshAll(showLoading = false) {
   if (sources.solar) setApiStatus("solar", "loading");
   if (sources.fires) setApiStatus("fires", "loading");
   if (sources.volcanoes) setApiStatus("volcanoes", "loading");
+  setApiStatus("civilDefense", "loading");
   const fetches = [];
   if (sources.usgs) fetches.push(updateEarthquakes());
   if (sources.eonet) fetches.push(updateStorms());
@@ -429,6 +448,7 @@ async function refreshAll(showLoading = false) {
   if (sources.solar) fetches.push(updateSolar());
   if (sources.fires) fetches.push(updateFires());
   if (sources.volcanoes) fetches.push(updateVolcanoes());
+  fetches.push(updateCivilDefense());
   await Promise.allSettled(fetches);
   state.lastUpdate = new Date();
   render();
@@ -514,6 +534,17 @@ function bindControls() {
       render();
     }
   });
+  elements.filterCivilDefense?.addEventListener("change", async () => {
+    state.filters = readFilters();
+    if (state.filters.civilDefense) {
+      if (!state.civilDefense.length) {
+        await updateCivilDefense();
+      }
+      render();
+    } else {
+      render();
+    }
+  });
   elements.magnitudeFilter.addEventListener("input", applyFilters);
   elements.periodFilter.addEventListener("change", async () => {
     state.filters = readFilters();
@@ -534,6 +565,7 @@ const STORM_POLL_MS = 15 * 60 * 1000;
 const SOLAR_POLL_MS = 30 * 60 * 1000;
 const FLOOD_POLL_MS = 30 * 60 * 1000;
 const VOLCANO_POLL_MS = 30 * 60 * 1000;
+const CIVIL_DEFENSE_POLL_MS = 15 * 60 * 1000;
 const OPEN_METEO_DAILY_QUOTA = 10000;
 const QUOTA_SAFETY_FACTOR = 0.75;
 const BASE_WEATHER_POINTS = WORLD_WIND_CITIES.length;
@@ -551,6 +583,7 @@ function startPolling() {
   clearInterval(solarTimer);
   clearInterval(floodTimer);
   clearInterval(volcanoTimer);
+  clearInterval(civilDefenseTimer);
   if (sources.usgs) earthquakeTimer = setInterval(() => { checkQuotaReset(); refreshEarthquakesOnly(); }, EARTHQUAKE_POLL_MS);
   if (sources.eonet) stormTimer = setInterval(() => { checkQuotaReset(); refreshStormsOnly(); }, STORM_POLL_MS);
   if (sources.openmeteo || sources.inmet) weatherTimer = setInterval(() => { checkQuotaReset(); updateWeather(); render(); }, WEATHER_POLL_MS);
@@ -577,6 +610,11 @@ function startPolling() {
     await updateVolcanoes();
     render();
   }, VOLCANO_POLL_MS);
+  civilDefenseTimer = setInterval(async () => {
+    checkQuotaReset();
+    await updateCivilDefense();
+    render();
+  }, CIVIL_DEFENSE_POLL_MS);
 }
 
 window.addEventListener("DOMContentLoaded", () => {

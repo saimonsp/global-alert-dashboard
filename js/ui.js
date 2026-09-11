@@ -66,6 +66,7 @@ export const elements = {
   filterFloods: document.querySelector("#filter-floods"),
   filterFires: document.querySelector("#filter-fires"),
   filterVolcanoes: document.querySelector("#filter-volcanoes"),
+  filterCivilDefense: document.querySelector("#filter-civil-defense"),
   fireCount: document.querySelector("#fire-count"),
   volcanoCount: document.querySelector("#volcano-count"),
   statusFires: document.querySelector("#status-fires"),
@@ -216,14 +217,14 @@ function formatRelativeTime(date) {
 export function renderAlerts(events, onSelect) {
   elements.alertsList.replaceChildren();
   const now = Date.now();
-  const oneHourAgo = now - 60 * 60 * 1000;
-  const recent = events.filter(event => new Date(event.timestamp).getTime() >= oneHourAgo);
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  const recent = events.filter(event => new Date(event.timestamp).getTime() >= oneDayAgo);
   const sorted = [...recent].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 60);
 
   if (!sorted.length) {
     const empty = document.createElement("p");
     empty.className = "alert-meta";
-    empty.textContent = "Nenhum evento na ultima hora.";
+    empty.textContent = "Nenhum evento nas ultimas 24 horas.";
     elements.alertsList.append(empty);
     return;
   }
@@ -237,15 +238,17 @@ export function renderAlerts(events, onSelect) {
     const isFire = event.type === "fire";
     const isVolcano = event.type === "volcano";
     const isFlood = FLOOD_TYPES.has(event.type);
+    const isCivilDefense = event.type === "civil_defense";
     const isRecentCritical = isCriticalEvent(event);
-    const importance = isRecentCritical ? "critical" : isVolcano ? "volcano" : isStorm ? "storm" : isWind ? "wind" : isRain ? "rain" : isFire ? "fire" : isFlood ? "flood" : event.magnitude >= 5 ? "important" : event.magnitude >= 4 ? "moderate" : "";
+    const importance = isRecentCritical ? "critical" : isCivilDefense ? "civil-defense" : isVolcano ? "volcano" : isStorm ? "storm" : isWind ? "wind" : isRain ? "rain" : isFire ? "fire" : isFlood ? "flood" : event.magnitude >= 5 ? "important" : event.magnitude >= 4 ? "moderate" : "";
     const offlineClass = event.offline ? "offline-alert" : "";
     button.className = `alert-item ${importance} ${offlineClass}`;
     button.type = "button";
-    button.setAttribute("aria-label", `Abrir ${event.type === "storm" ? event.title : event.type === "wind" ? `vento em ${event.place}` : event.type === "rain" ? `chuva em ${event.place}` : event.type === "fire" ? `queimada` : event.type === "volcano" ? `vulcao ${event.title}` : event.type === "river_flood" ? `rio ${event.place}` : event.type === "flood_risk" ? `risco de enchente em ${event.place}` : event.place}`);
-    const icon = isStorm ? "cloud-lightning" : isWind ? "wind" : isRain ? "cloud-rain" : isFire ? "flame" : isVolcano ? "triangle-alert" : isFlood ? "alert-triangle" : event.magnitude >= 5 ? "triangle-alert" : "activity";
+    button.setAttribute("aria-label", `Abrir ${isCivilDefense ? `defesa civil - ${event.title}` : event.type === "storm" ? event.title : event.type === "wind" ? `vento em ${event.place}` : event.type === "rain" ? `chuva em ${event.place}` : event.type === "fire" ? `queimada` : event.type === "volcano" ? `vulcao ${event.title}` : event.type === "river_flood" ? `rio ${event.place}` : event.type === "flood_risk" ? `risco de enchente em ${event.place}` : event.place}`);
+    const icon = isCivilDefense ? "shield-alert" : isStorm ? "cloud-lightning" : isWind ? "wind" : isRain ? "cloud-rain" : isFire ? "flame" : isVolcano ? "triangle-alert" : isFlood ? "alert-triangle" : event.magnitude >= 5 ? "triangle-alert" : "activity";
     let title;
-    if (isStorm) title = event.title;
+    if (isCivilDefense) title = `${event.title} · ${event.municipio || ""}${event.uf ? "-" + event.uf : ""}`;
+    else if (isStorm) title = event.title;
     else if (isWind) title = `Vento ${event.windSpeed.toFixed(0)} km/h · ${event.place}`;
     else if (isRain) title = `Chuva ${event.precipitation.toFixed(1)} mm/h · ${event.place}`;
     else if (isFire) title = `Foco de queimada · ${event.satellite || "?"}`;
@@ -279,6 +282,7 @@ export function readFilters() {
     floods: elements.filterFloods?.checked ?? false,
     fires: elements.filterFires?.checked ?? false,
     volcanoes: elements.filterVolcanoes?.checked ?? false,
+    civilDefense: elements.filterCivilDefense?.checked ?? false,
     minMagnitude: Number(elements.magnitudeFilter.value),
     period: elements.periodFilter.value
   };

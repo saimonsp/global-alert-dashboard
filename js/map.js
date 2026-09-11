@@ -14,6 +14,7 @@ let rainLayer;
 let floodLayer;
 let fireLayer;
 let volcanoLayer;
+let civilDefenseLayer;
 let heatLayer;
 let userLocationMarker = null;
 let currentBaseLayer = null;
@@ -120,7 +121,8 @@ function buildBaseLayerControl() {
     "Chuvas": rainLayer,
     "Enchentes": floodLayer,
     "Queimadas": fireLayer,
-    "Vulcoes": volcanoLayer
+    "Vulcoes": volcanoLayer,
+    "Defesa Civil": civilDefenseLayer
   };
   for (const [key, layer] of Object.entries(BASE_LAYERS)) {
     const tileLayer = L.tileLayer(layer.url, { ...layer.options, subdomains: key === "satellite" || key === "terrain" || key === "relief" ? [] : "abc" });
@@ -157,6 +159,7 @@ export function initMap() {
   floodLayer = L.layerGroup().addTo(map);
   fireLayer = L.layerGroup().addTo(map);
   volcanoLayer = L.layerGroup().addTo(map);
+  civilDefenseLayer = L.layerGroup().addTo(map);
   heatLayer = L.layerGroup().addTo(map);
   buildBaseLayerControl();
   const savedStyle = getSettings()?.mapStyle;
@@ -419,6 +422,17 @@ function eventPopup(event, allEvents) {
       <dt>Fonte</dt><dd>${escapeHtml(event.source)}</dd>
       ${distanceHtml}
     </dl>
+  ` : event.type === "civil_defense" ? `
+    <h3>Defesa Civil ${offlineBadge}</h3>
+    <dl>
+      <dt>Evento</dt><dd>${escapeHtml(event.title)}</dd>
+      <dt>Nivel</dt><dd style="color: ${event.severity === "critical" ? "var(--danger)" : event.severity === "important" ? "var(--warning)" : "#f59e0b"}; font-weight: 600">${escapeHtml(event.nivel)}</dd>
+      <dt>Municipio</dt><dd>${escapeHtml(event.municipio)}${event.uf ? ` · ${escapeHtml(event.uf)}` : ""}</dd>
+      <dt>Coordenadas</dt><dd>${escapeHtml(event.latitude.toFixed(4))}, ${escapeHtml(event.longitude.toFixed(4))}</dd>
+      <dt>Aberto em</dt><dd>${escapeHtml(formatDateTime(event.timestamp))}</dd>
+      <dt>Fonte</dt><dd>${escapeHtml(event.source)}</dd>
+      ${distanceHtml}
+    </dl>
   ` : `
     <h3>Tempestade ${offlineBadge}</h3>
     <dl>
@@ -601,6 +615,20 @@ function addVolcano(event, allEvents) {
   markerById.set(event.id, marker);
 }
 
+function addCivilDefense(event, allEvents) {
+  const severityColor = event.severity === "critical" ? "#ff3b30" : event.severity === "important" ? "#ff9500" : event.severity === "moderate" ? "#f59e0b" : "#34c759";
+  const marker = L.circleMarker([event.latitude, event.longitude], {
+    radius: 10,
+    color: "#fff",
+    weight: 1.5,
+    fillColor: severityColor,
+    fillOpacity: 0.85,
+    bubblingMouseEvents: false
+  }).bindPopup(eventPopup(event, allEvents));
+  marker.addTo(civilDefenseLayer);
+  markerById.set(event.id, marker);
+}
+
 export function renderMap(events) {
   invalidateMapSize();
   markerById.clear();
@@ -611,6 +639,7 @@ export function renderMap(events) {
   floodLayer.clearLayers();
   fireLayer.clearLayers();
   volcanoLayer.clearLayers();
+  civilDefenseLayer.clearLayers();
   heatLayer.clearLayers();
   if (isHeatOverlayEnabled()) addHeat(events);
   events.forEach(event => {
@@ -621,6 +650,7 @@ export function renderMap(events) {
     else if (event.type === "fire") addFire(event, events);
     else if (event.type === "volcano") addVolcano(event, events);
     else if (event.type === "river_flood" || event.type === "flood_risk") addFlood(event, events);
+    else if (event.type === "civil_defense") addCivilDefense(event, events);
   });
 }
 

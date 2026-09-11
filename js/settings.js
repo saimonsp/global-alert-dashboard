@@ -17,7 +17,8 @@ const DEFAULTS = {
     solar: true,
     fires: true,
     volcanoes: true,
-    floods: true
+    floods: true,
+    civilDefense: true
   },
   offline: {
     nwr_rtlsdr: { enabled: false, endpoint: "ws://localhost:8081", label: "NWR (RTL-SDR)" },

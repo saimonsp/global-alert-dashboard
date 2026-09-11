@@ -1258,6 +1258,7 @@ input[type="range"]::-moz-range-thumb {
 .alert-item.flood .alert-kind { color: #8b5cf6; }
 .alert-item.fire .alert-kind { color: #ff6600; }
 .alert-item.volcano .alert-kind { color: #ff4500; }
+.alert-item.civil-defense .alert-kind { color: #f59e0b; }
 .alert-item.critical .alert-kind { color: var(--danger); animation: pulse-critical 1s infinite; }
 
 .alert-item.important { border-left-color: var(--danger); }
@@ -1268,6 +1269,7 @@ input[type="range"]::-moz-range-thumb {
 .alert-item.flood { border-left-color: #8b5cf6; }
 .alert-item.fire { border-left-color: #ff6600; }
 .alert-item.volcano { border-left-color: #ff4500; }
+.alert-item.civil-defense { border-left-color: #f59e0b; }
 .alert-item.critical { border-left-color: var(--danger); background: rgba(255,59,48,0.08); }
 
 @keyframes pulse-critical {

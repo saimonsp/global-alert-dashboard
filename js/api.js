@@ -52,6 +52,11 @@ export async function fetchStorms() {
 }
 
 export async function fetchVolcanoes() {
-  const data = await fetchJsonRetry(USGS_VOLCANO_URL);
+  const response = await fetch(USGS_VOLCANO_URL, {
+    signal: AbortSignal.timeout(15000),
+    headers: { "User-Agent": "GlobalAlertDashboard/1.1 github.com/saimonsp/global-alert-dashboard" }
+  });
+  if (!response.ok) throw new Error(`USGS VHP HTTP ${response.status}`);
+  const data = await response.json();
   return { events: normalizeVolcanoData(data), source: "USGS VHP" };
 }
