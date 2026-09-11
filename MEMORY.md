@@ -84,6 +84,42 @@ Removido em 2026-09-11:
 - `clearAlertSystem()` de alerts.js (nunca chamada)
 - `elements.strongCount` de ui.js (elemento HTML inexistente)
 
+## Fontes de Dados - Analise de Confiabilidade (2026-09-11)
+
+### Fontes Removidas
+- **weather-api.site**: Removida por falta de garantias (sem TOS, sem equipe visivel, wrapper de terceiros)
+
+### Fontes Adicionadas
+- **NOAA NHC** (nhc.noaa.gov): Ciclones tropicais Atlantic/Pacific - domínio público, sem chave, JSON limpo
+- **PocketWorld** (pocketworld.org): Agregador gratuito (USGS+EMSC, EONET+NHC+FIRMS+GDACS) - CORS aberto, sem chave
+
+### Cadeia de Fallbacks Atualizada
+- **Terremotos**: USGS -> EMSC -> PocketWorld
+- **Tempestades**: NASA EONET -> NOAA NHC -> GDACS -> PocketWorld
+- **Clima**: Open-Meteo -> MET Norway (weather-api.site removida)
+- **Queimadas**: INPE (só Brasil)
+- **Enchentes**: ANA (só Brasil)
+- **Solar**: NOAA SWPC (fonte oficial)
+- **Vulcões**: USGS VHP (fonte oficial)
+
+### Status das Fontes
+| Fonte | Gratuita | Aberta | Confiavel | Notas |
+|-------|----------|--------|-----------|-------|
+| USGS | ✅ | ✅ Domínio público | ⭐⭐⭐ | Gold standard terremotos |
+| EMSC | ✅ | ✅ | ⭐⭐⭐ | Fallback sólido |
+| NASA EONET | ✅ | ✅ CC | ⭐⭐ | Pode ser lento |
+| NOAA NHC | ✅ | ✅ Domínio público | ⭐⭐⭐ | Ciclones Atlantic/EP |
+| GDACS | ✅ | ✅ | ⭐⭐ | Alertas, não tracking real-time |
+| PocketWorld | ✅ | ✅ Open CORS | ⭐⭐ | Agregador, 300 req/min |
+| Open-Meteo | ✅ | ✅ CC BY | ⭐⭐⭐ | Melhor API clima gratuita |
+| MET Norway | ✅ | ✅ CC BY | ⭐⭐⭐ | Fallback sólido |
+| INMET | ✅ | ✅ Dados públicos | ⭐⭐ | Só Brasil |
+| INPE | ✅ | ✅ Dados públicos | ⭐⭐ | Só Brasil |
+| ANA | ✅ | ✅ Dados públicos | ⭐⭐ | Só Brasil |
+| NOAA SWPC | ✅ | ✅ Domínio público | ⭐⭐⭐ | Fonte oficial |
+| USGS VHP | ✅ | ✅ Domínio público | ⭐⭐⭐ | Fonte oficial |
+| Nominatim | ✅ | ✅ OSM | ⭐⭐ | Rate limit 1 req/s |
+
 ## Melhorias de UI
 
 Aplicadas em 2026-09-11:
@@ -94,15 +130,17 @@ Aplicadas em 2026-09-11:
 
 | API | Endpoint | Limite | Fallback |
 |-----|----------|--------|----------|
-| USGS Earthquake | earthquake.usgs.gov | Sem limite | EMSC SeismicPortal |
-| NASA EONET | eonet.gsfc.nasa.gov | Sem limite | GDACS |
-| Open-Meteo | api.open-meteo.com | 10.000/dia | MET Norway -> weather-api.site |
+| USGS Earthquake | earthquake.usgs.gov | Sem limite | EMSC -> PocketWorld |
+| NASA EONET | eonet.gsfc.nasa.gov | Sem limite | NOAA NHC -> GDACS -> PocketWorld |
+| Open-Meteo | api.open-meteo.com | 10.000/dia | MET Norway |
 | INMET | apitempo.inmet.gov.br | Sem limite | Open-Meteo |
 | NOAA SWPC | services.swpc.noaa.gov | Sem limite | - |
 | ANA HidroWeb | ana.gov.br | Sem limite | - |
 | INPE Queimadas | dataserver-coids.inpe.br | Sem limite | - |
 | USGS VHP | volcanoes.usgs.gov | Sem limite | - |
 | Nominatim | nominatim.openstreetmap.org | 1 req/s | - |
+| NOAA NHC | nhc.noaa.gov | Sem limite | (fallback ciclones) |
+| PocketWorld | pocketworld.org | 300/min | (fallback geral) |
 
 ## Estrutura de Pastas
 

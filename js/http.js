@@ -1,7 +1,6 @@
 export const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
 export const INMET_URL = "https://apitempo.inmet.gov.br/estacao/dados/";
 export const MET_NORWAY_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact";
-export const WEATHER_API_SITE_URL = "https://weather-api.site/weather";
 
 const DEFAULT_OPTIONS = { timeoutMs: 15000, retries: 2, backoffMs: 800 };
 
@@ -61,20 +60,6 @@ export async function fetchMetNorway(url) {
   const text = await response.text();
   if (!text || !text.trim()) {
     throw new Error("MET Norway: resposta vazia");
-  }
-  return JSON.parse(text);
-}
-
-export async function fetchWeatherApiSite(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-  if (!response.ok) {
-    const error = new Error(`weather-api.site HTTP ${response.status}`);
-    error.status = response.status;
-    throw error;
-  }
-  const text = await response.text();
-  if (!text || !text.trim()) {
-    throw new Error("weather-api.site: resposta vazia");
   }
   return JSON.parse(text);
 }

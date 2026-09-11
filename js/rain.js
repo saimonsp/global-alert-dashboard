@@ -1,5 +1,5 @@
 import { isFiniteNumber, isValidCoordinate, parseNumber } from "./utils.js";
-import { fetchJsonRetry, fetchMetNorway, fetchWeatherApiSite, OPEN_METEO_URL, INMET_URL, MET_NORWAY_URL, WEATHER_API_SITE_URL } from "./http.js";
+import { fetchJsonRetry, fetchMetNorway, OPEN_METEO_URL, INMET_URL, MET_NORWAY_URL } from "./http.js";
 import { WORLD_WIND_CITIES, WIND_THRESHOLD_KMH, buildRegionalWindEvents } from "./winds.js";
 import { weatherCodeToDescription } from "./weather.js";
 
@@ -76,12 +76,7 @@ export async function fetchWindAndRain(points) {
   } catch (error) {
     if (error?.status === 429 || error?.name === "AbortError" || !error?.status) {
       console.warn("Open-Meteo indisponivel, tentando MET Norway...", error.message);
-      try {
-        return await fetchWindAndRainMetNorway(valid);
-      } catch (fallbackError) {
-        console.warn("MET Norway indisponivel, tentando weather-api.site...", fallbackError.message);
-        return await fetchWindAndRainWeatherApiSite(valid);
-      }
+      return await fetchWindAndRainMetNorway(valid);
     }
     throw error;
   }
@@ -150,65 +145,6 @@ async function fetchWindAndRainMetNorway(valid) {
         description: weatherCode !== null ? weatherCodeToDescription(weatherCode) : null,
         name: point.name || `${point.latitude.toFixed(2)}, ${point.longitude.toFixed(2)}`,
         source: "MET Norway",
-        timestamp: observedAt
-      });
-    }
-  });
-  await Promise.allSettled(fetches);
-  return {
-    winds: buildRegionalWindEvents(winds, "base"),
-    rains: buildRegionalRainEvents(rains, "base"),
-    observations
-  };
-}
-
-async function fetchWindAndRainWeatherApiSite(valid) {
-  const observedAt = new Date().toISOString();
-  const winds = [];
-  const rains = [];
-  const observations = [];
-  const fetches = valid.map(async (point) => {
-    const url = `${WEATHER_API_SITE_URL}?lat=${point.latitude}&lon=${point.longitude}`;
-    const data = await fetchWeatherApiSite(url);
-    const current = data?.current ?? {};
-    const temperature = parseNumber(current.temperature);
-    const humidity = parseNumber(current.humidity);
-    const windSpeed = parseNumber(current.wind_speed);
-    const windDirection = parseNumber(current.wind_direction);
-    const precipitation = parseNumber(current.precipitation);
-    const conditionCode = parseNumber(current.condition_code);
-    observations.push({
-      latitude: point.latitude,
-      longitude: point.longitude,
-      name: point.name,
-      country: point.country ?? "",
-      temperature,
-      apparentTemperature: temperature,
-      humidity,
-      windGusts: null,
-      precipitation,
-      precipitationHistory: []
-    });
-    if (windSpeed !== null && windSpeed >= WIND_THRESHOLD_KMH) {
-      winds.push({
-        latitude: point.latitude,
-        longitude: point.longitude,
-        windSpeed,
-        windGusts: null,
-        windDirection,
-        name: point.name || `${point.latitude.toFixed(2)}, ${point.longitude.toFixed(2)}`,
-        source: "weather-api.site",
-        timestamp: observedAt
-      });
-    }
-    if (precipitation !== null && precipitation >= RAIN_THRESHOLD_MM) {
-      rains.push({
-        latitude: point.latitude,
-        longitude: point.longitude,
-        precipitation,
-        description: conditionCode !== null ? weatherCodeToDescription(conditionCode) : null,
-        name: point.name || `${point.latitude.toFixed(2)}, ${point.longitude.toFixed(2)}`,
-        source: "weather-api.site",
         timestamp: observedAt
       });
     }

@@ -2,6 +2,8 @@ import { isFiniteNumber, isValidCoordinate } from "./utils.js";
 
 export const EONET_STORM_ENDPOINT = "https://eonet.gsfc.nasa.gov/api/v3/events/geojson?category=severeStorms&days=30&status=all&limit=80";
 export const GDACS_TC_ENDPOINT = "https://www.gdacs.org/xml/gdacsTC.geojson";
+export const NOAA_NHC_ENDPOINT = "https://www.nhc.noaa.gov/CurrentStorms.json";
+export const POCKETWORLD_STORMS_ENDPOINT = "https://pocketworld.org/api/storms";
 
 function classifyStormSeverity(alertLevel, magnitudeValue) {
   const level = String(alertLevel || "").toLowerCase();
@@ -109,4 +111,56 @@ export function normalizeGdacsStormData(data) {
   });
 
   return [...latestById.values()];
+}
+
+export function normalizeNhcStormData(data) {
+  if (!data || !Array.isArray(data.features)) return [];
+  return data.features.map(feature => {
+    const props = feature?.properties ?? {};
+    const coords = feature?.geometry?.coordinates ?? [];
+    const longitude = Number(coords[0]);
+    const latitude = Number(coords[1]);
+    if (!isValidCoordinate(latitude, longitude)) return null;
+    const timestamp = props.post_time ? new Date(props.post_time).toISOString() : null;
+    if (!timestamp) return null;
+    return {
+      id: `nhc-${props.id || `storm-${latitude.toFixed(2)},${longitude.toFixed(2)}`}`,
+      type: "storm",
+      latitude,
+      longitude,
+      title: props.name || "Ciclone sem nome",
+      category: [props.classification, props.wind_speed_kt ? `${props.wind_speed_kt} kt` : ""].filter(Boolean).join(" · ") || "Tropical Cyclone",
+      timestamp,
+      url: props.forecast_advisory || "",
+      source: "NOAA NHC",
+      magnitudeValue: isFiniteNumber(props.wind_speed_kt) ? Number(props.wind_speed_kt) : null,
+      magnitudeUnit: "kt"
+    };
+  }).filter(Boolean);
+}
+
+export function normalizePocketWorldStormData(data) {
+  if (!data || !Array.isArray(data.features)) return [];
+  return data.features.map(feature => {
+    const props = feature?.properties ?? {};
+    const coords = feature?.geometry?.coordinates ?? [];
+    const longitude = Number(Array.isArray(coords[0]) ? coords[0][0] : coords[0]);
+    const latitude = Number(Array.isArray(coords[0]) ? coords[0][1] : coords[1]);
+    if (!isValidCoordinate(latitude, longitude)) return null;
+    const timestamp = props.date ? new Date(props.date).toISOString() : null;
+    if (!timestamp) return null;
+    return {
+      id: `pw-${props.id || feature.id || `storm-${latitude.toFixed(2)},${longitude.toFixed(2)}`}`,
+      type: "storm",
+      latitude,
+      longitude,
+      title: props.title || props.name || "Tempestade",
+      category: props.category || "Severe Storms",
+      timestamp,
+      url: props.link || "",
+      source: props.source || "PocketWorld",
+      magnitudeValue: isFiniteNumber(props.magnitudeValue) ? Number(props.magnitudeValue) : null,
+      magnitudeUnit: props.magnitudeUnit || ""
+    };
+  }).filter(Boolean);
 }

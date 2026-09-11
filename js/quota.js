@@ -3,7 +3,6 @@ const quota = {
   eonet: { calls: 0, limit: Infinity, label: "NASA EONET" },
   weather: { calls: 0, limit: 10000, label: "Open-Meteo" },
   met_norway: { calls: 0, limit: Infinity, label: "MET Norway" },
-  weather_api_site: { calls: 0, limit: Infinity, label: "weather-api.site" },
   inmet: { calls: 0, limit: Infinity, label: "INMET" },
   solar: { calls: 0, limit: Infinity, label: "NOAA SWPC" },
   floods: { calls: 0, limit: Infinity, label: "Enchentes" },

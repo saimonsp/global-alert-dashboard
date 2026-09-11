@@ -8,8 +8,12 @@ import {
 import {
   EONET_STORM_ENDPOINT,
   GDACS_TC_ENDPOINT,
+  NOAA_NHC_ENDPOINT,
+  POCKETWORLD_STORMS_ENDPOINT,
   normalizeStormData,
-  normalizeGdacsStormData
+  normalizeGdacsStormData,
+  normalizeNhcStormData,
+  normalizePocketWorldStormData
 } from "./storms.js";
 import { USGS_VOLCANO_URL, normalizeVolcanoData } from "./volcanoes.js";
 
@@ -29,9 +33,21 @@ export async function fetchStorms() {
     const data = await fetchJsonRetry(EONET_STORM_ENDPOINT);
     return { events: normalizeStormData(data), source: "NASA EONET" };
   } catch (error) {
-    console.warn("NASA EONET indisponivel, usando GDACS como fallback", error);
-    const data = await fetchJsonRetry(GDACS_TC_ENDPOINT);
-    return { events: normalizeGdacsStormData(data), source: "GDACS" };
+    console.warn("NASA EONET indisponivel, tentando NOAA NHC...", error.message);
+    try {
+      const data = await fetchJsonRetry(NOAA_NHC_ENDPOINT);
+      return { events: normalizeNhcStormData(data), source: "NOAA NHC" };
+    } catch (nhcError) {
+      console.warn("NOAA NHC indisponivel, tentando GDACS...", nhcError.message);
+      try {
+        const data = await fetchJsonRetry(GDACS_TC_ENDPOINT);
+        return { events: normalizeGdacsStormData(data), source: "GDACS" };
+      } catch (gdacsError) {
+        console.warn("GDACS indisponivel, tentando PocketWorld...", gdacsError.message);
+        const data = await fetchJsonRetry(POCKETWORLD_STORMS_ENDPOINT);
+        return { events: normalizePocketWorldStormData(data), source: "PocketWorld" };
+      }
+    }
   }
 }
 
