@@ -60,6 +60,36 @@
 1. **map.js**: `isValidCoordinate` usado mas nao importado de `utils.js` - causava ReferenceError no botao de localizacao
 2. **offline-sources.js**: Variavel `aheadline` indefinida (deveria ser `a.headline`) - causava ReferenceError ao processar alertas NWR
 
+### 2026-09-11
+3. **earthquakes.js**: `Number(depth) ?? 100` nao captura NaN - profundidade null era tratada como 0km em vez de 100km
+4. **utils.js**: Typo "Alundo" corrigido para "Alto" no risco de terremoto
+5. **index.html**: Typo `--:--:` no elemento de vulcoes corrigido para `--:--:--`
+6. **Painel de clima local**: Adicionado botao de fechar (X) - antes nao tinha como fechar
+7. **Banner de erro**: Adicionado botao de dispensar (X) ao lado de "Retentar"
+
+## Configuracoes Removidas (eram salvas mas nunca funcionavam)
+
+Removidas em 2026-09-11:
+- `setting-cluster` - clustering nunca implementado
+- `setting-critical-only` - nunca filtrava alertas
+- `setting-auto-refresh` - polling sempre rodava
+- `setting-refresh-interval` - intervalos hardcoded no app.js
+- `setting-tv-rotation` - intervalo fixo de 25s no tv.js
+- `setting-tv-burnin` - burn-in sempre executava
+
+## Codigo Morto Removido
+
+Removido em 2026-09-11:
+- `fetchRainfall()` de rain.js (substituida por fetchWindAndRain)
+- `clearAlertSystem()` de alerts.js (nunca chamada)
+- `elements.strongCount` de ui.js (elemento HTML inexistente)
+
+## Melhorias de UI
+
+Aplicadas em 2026-09-11:
+- `border-radius` em todos os paineis: stat-cards, map-panel, alerts, local-weather, search-box, critical-banner, settings-groups, online-pill, status-bar
+- Banner de erro com texto alinhado a esquerda
+
 ## APIs Utilizadas
 
 | API | Endpoint | Limite | Fallback |
