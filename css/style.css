@@ -85,6 +85,7 @@ a { color: var(--accent); }
   background: var(--panel);
   font-size: 0.78rem;
   font-weight: 700;
+  border-radius: 20px;
 }
 
 .online-pill span,
@@ -176,6 +177,7 @@ a { color: var(--accent); }
 .side-panel section.alerts {
   border: 1px solid var(--border);
   background: var(--panel);
+  border-radius: 10px;
 }
 
 .panel-fold {
@@ -291,6 +293,7 @@ a { color: var(--accent); }
   isolation: isolate;
   border: 1px solid var(--border);
   background: var(--panel);
+  border-radius: 10px;
 }
 
 #map {
@@ -399,13 +402,14 @@ a { color: var(--accent); }
   background: rgba(46, 18, 20, 0.97);
   color: var(--error);
   font-size: 0.85rem;
+  border-radius: 10px 10px 0 0;
 }
 
 .status-bar.hidden { display: none; }
 
 .status-bar #status-bar-text {
   flex: 1;
-  text-align: center;
+  text-align: left;
 }
 
 .status-bar #retry-button {
@@ -417,6 +421,19 @@ a { color: var(--accent); }
   font-weight: 700;
   color: var(--text);
 }
+
+.status-bar .dismiss-error {
+  background: none;
+  border: none;
+  color: var(--error);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.status-bar .dismiss-error:hover { opacity: 1; }
 
 .critical-banner {
   position: absolute;
@@ -435,6 +452,7 @@ a { color: var(--accent); }
   background: rgba(120, 20, 20, 0.92);
   color: #fff;
   font-size: clamp(0.8rem, 1.3vw, 1rem);
+  border-radius: 12px;
   animation: criticalPulse 2s ease-in-out infinite;
 }
 
@@ -585,9 +603,30 @@ a { color: var(--accent); }
   border: 1px solid var(--border);
   background: rgba(23, 29, 36, 0.94);
   font-size: clamp(0.75rem, 1vw, 0.88rem);
+  border-radius: 10px;
 }
 
 .local-weather.hidden { display: none; }
+
+.local-weather-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.local-weather-close:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+.local-weather-close .lucide { width: 14px; height: 14px; }
 
 .search-box {
   position: absolute;
@@ -596,6 +635,8 @@ a { color: var(--accent); }
   transform: translateX(-50%);
   z-index: 800;
   width: min(380px, calc(100% - 150px));
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .search-icon {
@@ -1494,6 +1535,7 @@ html.tv-mode { font-size: clamp(17px, 1.35vw, 24px); }
 .settings-group {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .settings-group:last-child {
