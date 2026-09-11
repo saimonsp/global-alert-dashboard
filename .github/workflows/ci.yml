@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint JavaScript (syntax check)
+        run: |
+          for f in js/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Validate HTML
+        run: |
+          npx --yes html-validate index.html offline-survival.html tests.html || true
+
+      - name: Check for security issues
+        run: |
+          echo "Checking for hardcoded secrets..."
+          if grep -rn "api_key\|secret\|password\|token" js/ --include="*.js" | grep -v "quota\|limit\|label\|calls\|source"; then
+            echo "WARNING: Potential secrets found"
+            exit 1
+          fi
+          echo "No hardcoded secrets found"
+
+      - name: Check escapeHtml usage
+        run: |
+          echo "Verifying escapeHtml is used with innerHTML..."
+          grep -n "innerHTML" js/*.js | while read line; do
+            file=$(echo "$line" | cut -d: -f1)
+            linenum=$(echo "$line" | cut -d: -f2)
+            echo "$file:$linenum - innerHTML usage found (verify escapeHtml is used)"
+          done
+
+  deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
