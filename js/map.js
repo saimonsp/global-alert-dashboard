@@ -281,6 +281,7 @@ async function updateLocalWeatherPanel() {
   const center = map.getCenter();
   panel.classList.remove("hidden");
   panel.innerHTML = `
+    <button type="button" class="local-weather-close" id="local-weather-close" title="Fechar" aria-label="Fechar painel de clima local"><i data-lucide="x" aria-hidden="true"></i></button>
     <div class="local-weather-title"><i data-lucide="map-pin" aria-hidden="true"></i><h3>Carregando clima local...</h3></div>
     <p class="alert-meta">Consultando dados da regiao.</p>
   `;
@@ -295,9 +296,12 @@ async function updateLocalWeatherPanel() {
   const weather = weatherResult.status === "fulfilled" ? weatherResult.value : null;
   setApiStatus("weather", weather ? "online" : "error");
   panel.innerHTML = `
+    <button type="button" class="local-weather-close" id="local-weather-close" title="Fechar" aria-label="Fechar painel de clima local"><i data-lucide="x" aria-hidden="true"></i></button>
     <div class="local-weather-title"><i data-lucide="map-pin" aria-hidden="true"></i><h3>${escapeHtml(localWeatherTitle(location, center))}</h3></div>
     ${weather ? weatherMarkup(weather) : "<p class=\"alert-meta\">Dados meteorologicos indisponiveis para esta area.</p>"}
   `;
+  const closeBtn = panel.querySelector("#local-weather-close");
+  if (closeBtn) closeBtn.addEventListener("click", () => panel.classList.add("hidden"));
   refreshIcons();
 }
 

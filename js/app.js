@@ -524,6 +524,9 @@ function bindControls() {
   elements.refreshButton.addEventListener("click", () => refreshAll(true));
   elements.worldButton.addEventListener("click", fitWorld);
   elements.retryButton?.addEventListener("click", retryFailedSources);
+  document.querySelector("#dismiss-error-button")?.addEventListener("click", () => {
+    elements.errorBanner?.classList.add("hidden");
+  });
 }
 
 const EARTHQUAKE_POLL_MS = 60 * 1000;
