@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sobrevivencia Offline — Guias de Hardware</title>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --surface-2: #1a2332;
+      --surface-3: #243042;
+      --border: #1e293b;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-dim: #0c4a6e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --purple: #a78bfa;
+      --pink: #f472b6;
+      --cyan: #22d3ee;
+      --orange: #fb923c;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0c4a6e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 4rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 60%, rgba(56,189,248,0.08) 0%, transparent 60%),
+                  radial-gradient(circle at 70% 30%, rgba(167,139,250,0.06) 0%, transparent 50%);
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .hero .subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 700px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0 3rem;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.2s, transform 0.1s;
+    }
+    .toc-item:hover { border-color: var(--accent); transform: translateY(-2px); text-decoration: none; }
+    .toc-item .tier { font-size: 2rem; width: 50px; text-align: center; }
+    .toc-item .info h3 { font-size: 0.95rem; font-weight: 600; }
+    .toc-item .info p { font-size: 0.82rem; color: var(--text-muted); }
+
+    .project {
+      margin-top: 3rem;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .project-header {
+      padding: 2rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .project-header .icon { font-size: 3rem; }
+    .project-header .meta h2 { font-size: 1.4rem; font-weight: 700; }
+    .project-header .meta p { color: var(--text-muted); font-size: 0.95rem; }
+    .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-left: auto; }
+    .badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .badge-cost { color: var(--success); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.1); }
+    .badge-diff { color: var(--warning); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.1); }
+    .badge-range { color: var(--purple); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.1); }
+    .project-body { padding: 2rem 2.5rem; }
+    .project-body h3 {
+      font-size: 1.1rem;
+      margin: 2rem 0 1rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .project-body h3:first-child { margin-top: 0; }
+    .project-body p { color: var(--text-muted); margin-bottom: 1rem; }
+    .project-body ul, .project-body ol { padding-left: 1.5rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .project-body li { margin-bottom: 0.5rem; }
+    .project-body li strong { color: var(--text); }
+    .project-body strong { color: var(--text); }
+
+    .hardware-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .hw-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      transition: border-color 0.2s;
+    }
+    .hw-card:hover { border-color: var(--accent); }
+    .hw-card .hw-visual { font-size: 2rem; margin-bottom: 0.5rem; }
+    .hw-card .hw-name { font-weight: 700; color: var(--text); margin-bottom: 0.3rem; font-size: 0.95rem; }
+    .hw-card .hw-spec { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem; line-height: 1.5; }
+    .hw-card .hw-price { color: var(--success); font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .hw-card .hw-where { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+    .hw-card .hw-where a { font-weight: 500; }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+    .comparison-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: var(--surface-2);
+      color: var(--accent);
+      border-bottom: 2px solid var(--border);
+      font-weight: 600;
+    }
+    .comparison-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .comparison-table tr:hover td { background: rgba(56,189,248,0.03); }
+    .comparison-table td:first-child { color: var(--text); font-weight: 500; }
+
+    .visual-diagram {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 1.5rem 0;
+      overflow-x: auto;
+    }
+    .visual-diagram .diagram-title {
+      text-align: center;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .diagram-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 0.75rem 0;
+    }
+    .diagram-box {
+      padding: 0.75rem 1.25rem;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      min-width: 120px;
+      color: var(--text);
+    }
+    .diagram-box.accent { border-color: var(--accent); color: var(--accent); }
+    .diagram-box.warn { border-color: var(--warning); color: var(--warning); }
+    .diagram-box.ok { border-color: var(--success); color: var(--success); }
+    .diagram-box small { display: block; font-weight: 400; color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem; }
+    .diagram-arrow { color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+    .diagram-arrow-down { text-align: center; color: var(--accent); font-size: 1.3rem; margin: 0.5rem 0; }
+
+    .antenna-section {
+      background: linear-gradient(135deg, rgba(56,189,248,0.05), rgba(167,139,250,0.05));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .antenna-section h4 { color: var(--accent); margin-bottom: 0.75rem; font-size: 1rem; }
+    .antenna-visual {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      text-align: center;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .freq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .freq-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .freq-card .freq-value { font-size: 1.2rem; font-weight: 800; color: var(--accent); font-family: monospace; }
+    .freq-card .freq-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    .info-box {
+      background: rgba(56,189,248,0.08);
+      border: 1px solid rgba(56,189,248,0.3);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      color: var(--accent);
+      font-size: 0.9rem;
+    }
+    .info-box strong { display: block; margin-bottom: 0.3rem; }
+    .warning-box {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      color: var(--warning);
+      font-size: 0.9rem;
+    }
+    .warning-box strong { display: block; margin-bottom: 0.3rem; }
+    .danger-box {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      color: var(--danger);
+      font-size: 0.9rem;
+    }
+    .danger-box strong { display: block; margin-bottom: 0.3rem; }
+    .success-box {
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      color: var(--success);
+      font-size: 0.9rem;
+    }
+    .success-box strong { display: block; margin-bottom: 0.3rem; }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      font-size: 0.82rem;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+    }
+    .method-list { list-style: none; padding: 0; margin: 1rem 0; }
+    .method-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .method-list li strong { color: var(--text); }
+    .method-list .method-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+
+    .footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 768px) {
+      .project-header { padding: 1.5rem; }
+      .project-body { padding: 1.5rem; }
+      .hero { padding: 3rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Guias de Hardware Offline</h1>
+  <p class="subtitle">Receptores de alerta de desastres naturais <strong>sem internet</strong>. Do mais barato ao mais completo. Cada guia inclui hardware, onde comprar, e metodo de uso.</p>
+</div>
+
+<div class="container">
+
+  <h2 style="color: var(--accent); margin-bottom: 1rem;">Classificacao: do mais barato ao mais completo</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Metodo</th>
+        <th>Custo Total</th>
+        <th>Dificuldade</th>
+        <th>O que voce recebe</th>
+        <th>Sem internet?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>&#128241; Celular + App NWR</td>
+        <td>R$0</td>
+        <td>&#11088; Facil</td>
+        <td>Alertas SAME/EAS via app (requer internet inicial)</td>
+        <td>&#10060; Nao</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>&#127760; Meshtastic LoRa Mesh</td>
+        <td>R$100 — R$150/no</td>
+        <td>&#11088; Facil</td>
+        <td>Rede mesh criptografada, mensagens, alertas comunitarios</td>
+        <td>&#9989; Sim</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>&#128251; RTL-SDR + Radio VHF</td>
+        <td>R$200 — R$350</td>
+        <td>&#11088;&#11088; Intermediario</td>
+        <td>Alertas SAME/EAS em tempo real, voz NWR 24/7</td>
+        <td>&#9989; Sim</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>&#128752; RTL-SDR + NOAA APT</td>
+        <td>R$200 — R$400</td>
+        <td>&#11088;&#11088; Intermediario</td>
+        <td>Imagens meteorologicas de satelites polares</td>
+        <td>&#9989; Sim</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>&#128225; RTL-SDR + GOES Satelite</td>
+        <td>R$500 — R$900</td>
+        <td>&#11088;&#11088;&#11088; Avancado</td>
+        <td>Imagens geoestacionarias full-disk + EMWIN</td>
+        <td>&#9989; Sim</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>&#128266; RTL-SDR + Upconverter HF</td>
+        <td>R$300 — R$500</td>
+        <td>&#11088;&#11088; Intermediario</td>
+        <td>NAVTEX, WEFAX, WWV, alertas globais via ionosfera</td>
+        <td>&#9989; Sim</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <nav class="toc">
+    <a href="#tier-mesh" class="toc-item">
+      <div class="tier">&#127760;</div>
+      <div class="info">
+        <h3>Mais Facil — Meshtastic LoRa</h3>
+        <p>R$100/no. Plug-and-play. Sem antena complexa.</p>
+      </div>
+    </a>
+    <a href="#tier-nwr" class="toc-item">
+      <div class="tier">&#128251;</div>
+      <div class="info">
+        <h3>Melhor custo-beneficio — RTL-SDR + NWR</h3>
+        <p>R$200. Alertas em tempo real 24/7.</p>
+      </div>
+    </a>
+    <a href="#tier-noaa" class="toc-item">
+      <div class="tier">&#128752;</div>
+      <div class="info">
+        <h3>Imagens de satelite — NOAA APT</h3>
+        <p>R$200. Imagens reais do tempo.</p>
+      </div>
+    </a>
+    <a href="#tier-goes" class="toc-item">
+      <div class="tier">&#128225;</div>
+      <div class="info">
+        <h3>Avancado — GOES Satelite</h3>
+        <p>R$500+. Imagens completas de satelite.</p>
+      </div>
+    </a>
+    <a href="#tier-hf" class="toc-item">
+      <div class="tier">&#128266;</div>
+      <div class="info">
+        <h3>Alcance global — HF Shortwave</h3>
+        <p>R$300. Navtex, emergencia maritima.</p>
+      </div>
+    </a>
+    <a href="#onde-comprar" class="toc-item">
+      <div class="tier">&#128722;</div>
+      <div class="info">
+        <h3>Onde Comprar</h3>
+        <p>Lojas oficiais e links diretos.</p>
+      </div>
+    </a>
+  </nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- MESH LORA — MAIS FACIL                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="tier-mesh" class="project">
+    <div class="project-header">
+      <div class="icon">&#127760;</div>
+      <div class="meta">
+        <h2>Mais Facil — Meshtastic LoRa Mesh</h2>
+        <p>Rede mesh criptografada. Sem internet, sem torre, sem assinatura. Plug-and-play.</p>
+      </div>
+      <div class="badges">
+        <span class="badge badge-cost">R$100 — R$150/no</span>
+        <span class="badge badge-diff">Facil</span>
+        <span class="badge badge-range">2-20 km/hop</span>
+      </div>
+    </div>
+    <div class="project-body">
+
+      <h3>&#128161; O que e</h3>
+      <p><strong>Meshtastic</strong> e firmware open-source que transforma modulos LoRa em nos de rede mesh. Cada no e simultaneamente <strong>receptor, transmissor e repetidor</strong>. Funciona com bateria 18650 ou solar.</p>
+
+      <h3>&#128296; Hardware — Opcoes por No</h3>
+      <div class="hardware-grid">
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">Heltec WiFi LoRa 32 V3</div>
+          <div class="hw-spec">ESP32-S3 + SX1262 + OLED 0.96". Mais vendido. WiFi + Bluetooth. Slot bateria 18650.</div>
+          <div class="hw-price">R$100 — R$150</div>
+          <div class="hw-where">
+            <a href="https://heltec.org/project/wifi-lora-32-v3/" target="_blank" rel="noopener">heltec.org</a> (oficial) &bull;
+            <a href="https://www.aliexpress.com/w/wholesale-Heltec-LoRa-32-V3.html" target="_blank" rel="noopener">AliExpress</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">LILYGO T-Beam SX1262</div>
+          <div class="hw-spec">ESP32 + SX1262 + GPS integrado + slot 18650. Ideal para mobilidade e rastreamento.</div>
+          <div class="hw-price">R$150 — R$250</div>
+          <div class="hw-where">
+            <a href="https://www.lilygo.cc/products/t-beam-sx1262" target="_blank" rel="noopener">lilygo.cc</a> (oficial) &bull;
+            <a href="https://www.aliexpress.com/w/wholesale-LILYGO-T-Beam-SX1262.html" target="_blank" rel="noopener">AliExpress</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">Seeed XIAO ESP32S3 + SX1262</div>
+          <div class="hw-spec">Thumb-sized. Mais compacto. Para ambientes confinados.</div>
+          <div class="hw-price">R$50 — R$80</div>
+          <div class="hw-where">
+            <a href="https://www.seeedstudio.com/XIAO-ESP32S3-with-LoRa-E22-170T22D-p-5904.html" target="_blank" rel="noopener">seeedstudio.com</a> &bull;
+            <a href="https://www.digikey.com/" target="_blank" rel="noopener">DigiKey</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">RAK WisBlock</div>
+          <div class="hw-spec">Profissional. nRF52840. Baixo consumo. Para solar permanente.</div>
+          <div class="hw-price">R$200 — R$500</div>
+          <div class="hw-where">
+            <a href="https://rakwireless.com/" target="_blank" rel="noopener">rakwireless.com</a> (oficial) &bull;
+            <a href="https://www.digikey.com/" target="_blank" rel="noopener">DigiKey</a>
+          </div>
+        </div>
+      </div>
+
+      <h3>&#128269; Metodo de Uso</h3>
+      <ul class="method-list">
+        <li>
+          <span class="method-icon">&#128295;</span>
+          <div><strong>Flashear firmware:</strong> Acesse <a href="https://flasher.meshtastic.org" target="_blank" rel="noopener">flasher.meshtastic.org</a> (Chrome/Edge). Conecte via USB. Selecione seu modelo. Clique "Flash".</div>
+        </li>
+        <li>
+          <span class="method-icon">&#127760;</span>
+          <div><strong>Configurar regiao:</strong> <code>US (915 MHz)</code> para Americas, <code>EU_868</code> para Europa. Configure canal criptografado (PSK/AES-256).</div>
+        </li>
+        <li>
+          <span class="method-icon">&#128241;</span>
+          <div><strong>App celular:</strong> Android/iOS: app <strong>Meshtastic</strong> na loja. Conecte via Bluetooth. Envie mensagem de teste.</div>
+        </li>
+        <li>
+          <span class="method-icon">&#128279;</span>
+          <div><strong>Dashboard:</strong> Use <a href="https://github.com/BrokenSignal/MeshWX" target="_blank" rel="noopener">MeshWX</a> para transmitir alertas NWS pelo mesh e injetar no dashboard via WebSocket.</div>
+        </li>
+      </ul>
+
+      <div class="success-box">
+        <strong>&#9989; Custo para rede familiar (4 nos)</strong>
+        4x Heltec LoRa 32 = <strong>~R$500 total</strong>. Sem mensalidade. Funciona em desastres, hiking, camping, interrupcoes de rede.
+      </div>
+    </div>
+  </section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- RTL-SDR + NWR — MELHOR CUSTO-BENEFICIO                               -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="tier-nwr" class="project">
+    <div class="project-header">
+      <div class="icon">&#128251;</div>
+      <div class="meta">
+        <h2>Melhor Custo-Beneficio — RTL-SDR + NOAA Weather Radio</h2>
+        <p>Receptor de alertas meteorologicos 24/7 via radio VHF. Detecta automaticamente alertas SAME/EAS.</p>
+      </div>
+      <div class="badges">
+        <span class="badge badge-cost">R$200 — R$350</span>
+        <span class="badge badge-diff">Intermediario</span>
+        <span class="badge badge-range">50-100 km</span>
+      </div>
+    </div>
+    <div class="project-body">
+
+      <h3>&#128161; O que voce recebe</h3>
+      <p>O <strong>NOAA Weather Radio (NWR)</strong> transmite 24/7 em 7 frequencias VHF (<strong>162.400 — 162.550 MHz</strong>) nos EUA. Cada transmissao inclui codigos <strong>SAME</strong> que identificam tipo de alerta, area afetada e duracao. No Brasil, a REDENET/INMET opera em FM/AM.</p>
+
+      <h3>&#128296; Hardware Completo</h3>
+      <div class="hardware-grid">
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;</div>
+          <div class="hw-name">RTL-SDR Blog V3</div>
+          <div class="hw-spec">RTL2832U + R820T2. Bias-tee integrado. 500kHz-1.7GHz. Temperature compensated clock.</div>
+          <div class="hw-price">R$120 — R$180</div>
+          <div class="hw-where">
+            <a href="https://www.rtl-sdr.com/rtl-sdr-blog-v3-dongle/" target="_blank" rel="noopener">rtl-sdr.com</a> (oficial) &bull;
+            <a href="https://www.aliexpress.com/w/wholesale-RTL-SDR-Blog-V3.html" target="_blank" rel="noopener">AliExpress</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">Raspberry Pi 4 (2GB+)</div>
+          <div class="hw-spec">Qualquer SBC Linux ARM64 funciona (Orange Pi, Banana Pi). Roda rtl_fm + multimon-ng.</div>
+          <div class="hw-price">R$250 — R$400</div>
+          <div class="hw-where">
+            <a href="https://www.raspberrypi.com/" target="_blank" rel="noopener">raspberrypi.com</a> (oficial) &bull;
+            <a href="https://www.amazon.com.br/s?k=Raspberry+Pi+4" target="_blank" rel="noopener">Amazon BR</a> &bull;
+            <a href="https://www.mercadolivre.com.br/" target="_blank" rel="noopener">MercadoLivre</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;&#65039;</div>
+          <div class="hw-name">Antena Dipole VHF (DIY)</div>
+          <div class="hw-spec">Fio de cobre 14 AWG. Comprimento: 46cm por elemento. Gratuito ou custo minimo.</div>
+          <div class="hw-price">R$0 — R$30</div>
+          <div class="hw-where">Material: fio de cobre, conector F, cabo coaxial RG-58</div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128268;</div>
+          <div class="hw-name">Cabo Coaxial RG-58</div>
+          <div class="hw-spec">Maximo 5m. Cada metro perde ~0.3dB. Menos = melhor.</div>
+          <div class="hw-price">R$15 — R$30</div>
+          <div class="hw-where">
+            <a href="https://www.amazon.com.br/s?k=coaxial+RG-58" target="_blank" rel="noopener">Amazon BR</a> &bull;
+            Lojas de eletronicos
+          </div>
+        </div>
+      </div>
+
+      <h3>&#128269; Metodo de Uso</h3>
+      <div class="visual-diagram">
+        <div class="diagram-title">Fluxo do Sinal</div>
+        <div class="diagram-row">
+          <div class="diagram-box accent">&#127777; Transmissor NWR<br><small>162.4-162.55 MHz</small><small>50-100 km</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box">&#128225; Antena VHF<br><small>Dipole 46cm/elem</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box warn">&#128268; RG-58<br><small>max 5m</small></div>
+        </div>
+        <div class="diagram-arrow-down">&#11015;</div>
+        <div class="diagram-row">
+          <div class="diagram-box ok">&#128225; RTL-SDR V3<br><small>Bias-tee: alimenta LNA</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box accent">&#128241; Raspberry Pi<br><small>rtl_fm + multimon-ng</small><small>decodifica SAME/EAS</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box ok">&#9889; Dashboard<br><small>Alertas em tempo real</small></div>
+        </div>
+      </div>
+
+      <h3>&#127777; Antena DIY — Dipole VHF 162.5 MHz</h3>
+      <div class="antenna-section">
+        <h4>Material Necessario</h4>
+        <ul style="color: var(--text-muted);">
+          <li><strong>2x fio de cobre 14 AWG</strong> — comprimento: <strong>46.15 cm</strong> cada</li>
+          <li><strong>1x cabo coaxial RG-58</strong> — max 5m</li>
+          <li><strong>1x conector F femea</strong> — para soldar no cabo</li>
+          <li><strong>Suporte de plastico ou madeira</strong> — para manter angulo</li>
+        </ul>
+
+        <h4 style="color: var(--text); margin: 1rem 0 0.5rem;">Calculo:</h4>
+        <div class="antenna-visual"><span style="color: var(--accent);">Formula:</span> Comprimento = (300 / frequencia_MHz) / 4
+
+<span style="color: var(--accent);">Calculo:</span> 300 / 162.5 / 4 = <span style="color: var(--success); font-weight: 700;">0.4615m = 46.15 cm</span> por elemento
+
+<span style="color: var(--accent);">Total meia-onda:</span> 46.15 x 2 = <span style="color: var(--success); font-weight: 700;">92.3 cm</span>
+
+<span style="color: var(--warning);">Ajuste:</span> +/- 5% para ressonancia ideal (43.8 a 48.5 cm)</div>
+
+        <h4 style="color: var(--text); margin: 1rem 0 0.5rem;">Montagem:</h4>
+        <div class="antenna-visual"><span style="color: var(--accent);">Vista superior (angulo: 90-120 graus):</span>
+
+              <span style="color: var(--success);">Elemento A (46cm)</span>
+             /
+            /
+           /
+  <span style="color: var(--warning);">Centro</span> ───── <span style="color: var(--text-muted);">&lt;-- Cabo coaxial (para o SDR)</span>
+           \
+            \
+             \
+              <span style="color: var(--success);">Elemento B (46cm)</span></div>
+
+        <ul style="color: var(--text-muted); margin-top: 1rem;">
+          <li><strong>Monte no minimo 3m acima do solo</strong></li>
+          <li><strong>Posicione longe de metal</strong> — telhados, canos interferem</li>
+          <li><strong>Use cabo curto</strong> — cada metro perde ~0.3dB</li>
+          <li><strong>Orientacao:</strong> vertical para NWR (polarizacao vertical)</li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <strong>&#128161; Projeto recomendado: NWS-Alert-Dashboard</strong>
+        <a href="https://github.com/robwolff3/NWS-Alert-Dashboard" target="_blank" rel="noopener">github.com/robwolff3/NWS-Alert-Dashboard</a> — Docker container unico com 3 fontes: NWWS-OI (XMPP push), NOAA Weather Radio (RTL-SDR), e weather.gov API. Deduplicacao automatica.
+      </div>
+    </div>
+  </section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- NOAA APT — IMAGENS DE SATELITE                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="tier-noaa" class="project">
+    <div class="project-header">
+      <div class="icon">&#128752;</div>
+      <div class="meta">
+        <h2>Imagens de Satelite — NOAA APT</h2>
+        <p>Imagens meteorologicas diretamente de satelites NOAA. Passagens de 10-15 min, 2-4x por dia.</p>
+      </div>
+      <div class="badges">
+        <span class="badge badge-cost">R$200 — R$400</span>
+        <span class="badge badge-diff">Intermediario</span>
+        <span class="badge badge-range">Orbital (global)</span>
+      </div>
+    </div>
+    <div class="project-body">
+
+      <h3>&#128161; O que voce recebe</h3>
+      <p><strong>NOAA-15</strong> e <strong>NOAA-19</strong> transmetem imagens APT (Automatic Picture Transmission) em <strong>137 MHz</strong>. Cada passagem dura ~10-15 minutos e produce uma imagem strip do terreno em infravermelho e visivel.</p>
+
+      <div class="warning-box">
+        <strong>&#9888;&#65039; NOAA-18 desativado</strong>
+        Em junho de 2025, a NOAA desativou NOAA-18. APT permanece ativo em NOAA-15 e NOAA-19.
+      </div>
+
+      <h3>&#128296; Hardware</h3>
+      <div class="hardware-grid">
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;</div>
+          <div class="hw-name">RTL-SDR (qualquer)</div>
+          <div class="hw-spec">RTL2832U basico funciona. Sample rate 1.2MHz.</div>
+          <div class="hw-price">R$60 — R$120</div>
+          <div class="hw-where">
+            <a href="https://www.rtl-sdr.com/" target="_blank" rel="noopener">rtl-sdr.com</a> &bull;
+            <a href="https://www.aliexpress.com/w/wholesale-RTL-SDR.html" target="_blank" rel="noopener">AliExpress</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;&#65039;</div>
+          <div class="hw-name">Antena V-Dipole ou QFH</div>
+          <div class="hw-spec">137 MHz. V-dipole para linear. QFH para recepcao circular (melhor). DIY: 52.6cm por elemento.</div>
+          <div class="hw-price">R$30 — R$150 (DIY: R$0)</div>
+          <div class="hw-where">Material: fio de cobre, conector F, cabo coaxial</div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;</div>
+          <div class="hw-name">SAWBird+ NOAA (opcional)</div>
+          <div class="hw-spec">LNA + filtro para 137 MHz. Melhora muito a qualidade da imagem.</div>
+          <div class="hw-price">R$150 — R$200</div>
+          <div class="hw-where">
+            <a href="https://www.nooelec.com/store/sawbird-noaa.html" target="_blank" rel="noopener">nooelec.com</a> (oficial) &bull;
+            <a href="https://www.amazon.com/s?k=SAWBird+NOAA" target="_blank" rel="noopener">Amazon</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">Raspberry Pi 4 ou PC Linux</div>
+          <div class="hw-spec">2GB suficiente para NOAA APT.</div>
+          <div class="hw-price">R$250 — R$400</div>
+          <div class="hw-where">
+            <a href="https://www.raspberrypi.com/" target="_blank" rel="noopener">raspberrypi.com</a> &bull;
+            <a href="https://www.amazon.com.br/s?k=Raspberry+Pi+4" target="_blank" rel="noopener">Amazon BR</a>
+          </div>
+        </div>
+      </div>
+
+      <h3>&#128269; Metodo de Uso</h3>
+      <div class="visual-diagram">
+        <div class="diagram-title">Fluxo do Sinal NOAA APT</div>
+        <div class="diagram-row">
+          <div class="diagram-box accent">&#128752; NOAA-15/19<br><small>137 MHz APT</small><small>Orbita polar, 850km</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box">&#127777; Antena V-Dipole<br><small>137 MHz, 52.6cm/elem</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box warn">&#128225; SAWBird+ NOAA<br><small>LNA + Filtro 137MHz</small><small>Opcional mas recomendado</small></div>
+        </div>
+        <div class="diagram-arrow-down">&#11015;</div>
+        <div class="diagram-row">
+          <div class="diagram-box ok">&#128225; RTL-SDR<br><small>Demodula APT 1.2MHz</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box accent">&#128241; Raspberry Pi<br><small>SatDump / WXtoImg</small><small>Decodifica imagem</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box ok">&#127760; Imagem Meteorologica<br><small>IR + Visivel</small></div>
+        </div>
+      </div>
+
+      <h3>&#127777; Antena DIY — V-Dipole 137 MHz</h3>
+      <div class="antenna-section">
+        <h4>Calculo: 300 / 137 / 4 = <span style="color: var(--success);">52.6 cm</span> por elemento</h4>
+        <div class="antenna-visual"><span style="color: var(--accent);">Visual (vista frontal):</span>
+
+            <span style="color: var(--success);">Elemento A (52.6cm)</span>
+           /
+          /  <span style="color: var(--warning);">angulo: 90-120 graus</span>
+         /
+  <span style="color: var(--warning);">Centro</span> ──── <span style="color: var(--text-muted);">cabo coaxial (para SDR)</span>
+         \
+          \
+           \
+            <span style="color: var(--success);">Elemento B (52.6cm)</span></div>
+        <ul style="color: var(--text-muted); margin-top: 1rem;">
+          <li><strong>Angulo entre elementos:</strong> 90-120 graus (aberto em V)</li>
+          <li><strong>Conexao:</strong> ambos ao centro do coaxial (sinal + terra)</li>
+          <li><strong>Orientacao:</strong> horizontalmente, apontando para cima</li>
+          <li><strong>Altura:</strong> minimo 3m do solo</li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <strong>&#128161; Software: SatDump</strong>
+        <a href="https://www.satdump.org" target="_blank" rel="noopener">satdump.org</a> — processa imagens durante passagem ao vivo. Suporta NOAA, Meteor, FY-4A. Raspberry Pi e PC.
+      </div>
+    </div>
+  </section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- GOES SATELITE — AVANCADO                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="tier-goes" class="project">
+    <div class="project-header">
+      <div class="icon">&#128225;</div>
+      <div class="meta">
+        <h2>Avancado — GOES Satelite (L-Band)</h2>
+        <p>Imagens de alta resolucao e dados EMWIN do satelite geoestacionario. Antena fixa apontada uma vez.</p>
+      </div>
+      <div class="badges">
+        <span class="badge badge-cost">R$500 — R$900</span>
+        <span class="badge badge-diff">Avancado</span>
+        <span class="badge badge-range">Cobertura continental</span>
+      </div>
+    </div>
+    <div class="project-body">
+
+      <h3>&#128161; O que voce recebe</h3>
+      <p><strong>GOES-East (GOES-16/19)</strong> e <strong>GOES-West (GOES-17/18)</strong> transmetem em <strong>1694.1 MHz</strong> (L-Band):</p>
+      <ul>
+        <li><strong>Imagens full-disk:</strong> infravermelho e visivel, a cada 10-15 minutos</li>
+        <li><strong>Dados EMWIN:</strong> Emergency Managers Weather Information Network</li>
+        <li><strong>Alertas:</strong> furacoes, tornados, enchentes</li>
+      </ul>
+
+      <h3>&#128296; Hardware Completo</h3>
+      <div class="hardware-grid">
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;</div>
+          <div class="hw-name">RTL-SDR Blog V3/V4</div>
+          <div class="hw-spec">Bias-tee para alimentar LNA. Sample rate 2.4MHz.</div>
+          <div class="hw-price">R$120 — R$200</div>
+          <div class="hw-where">
+            <a href="https://www.rtl-sdr.com/" target="_blank" rel="noopener">rtl-sdr.com</a> &bull;
+            <a href="https://www.aliexpress.com/" target="_blank" rel="noopener">AliExpress</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;</div>
+          <div class="hw-name">Nooelec SAWBird+ GOES</div>
+          <div class="hw-spec">LNA + filtro SAW para 1688-1694 MHz. Noise Figure &lt; 1dB.</div>
+          <div class="hw-price">R$180 — R$250</div>
+          <div class="hw-where">
+            <a href="https://www.nooelec.com/store/sawbird-goes.html" target="_blank" rel="noopener">nooelec.com</a> (oficial)
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#127919;</div>
+          <div class="hw-name">Antena Grid Parabolica 1.9GHz</div>
+          <div class="hw-spec">Minimo 60x100cm. Ou grade WiFi 2.4GHz modificada.</div>
+          <div class="hw-price">R$200 — R$500</div>
+          <div class="hw-where">
+            <a href="https://www.aliexpress.com/w/wholesale-parabolic-grid-antenna.html" target="_blank" rel="noopener">AliExpress</a> &bull;
+            Lojas de telecomunicacoes
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">Raspberry Pi 4 (4GB+)</div>
+          <div class="hw-spec">Roda goesrecv (demodulacao HRIT). 4GB para processamento de imagens.</div>
+          <div class="hw-price">R$350 — R$500</div>
+          <div class="hw-where">
+            <a href="https://www.raspberrypi.com/" target="_blank" rel="noopener">raspberrypi.com</a> &bull;
+            <a href="https://www.amazon.com.br/s?k=Raspberry+Pi+4+4GB" target="_blank" rel="noopener">Amazon BR</a>
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128268;</div>
+          <div class="hw-name">Adaptadores RF</div>
+          <div class="hw-spec">N-male to SMA-male + jumper &lt;2m. Cada conexao perde ~0.2dB.</div>
+          <div class="hw-price">R$25 — R$50</div>
+          <div class="hw-where">
+            <a href="https://www.aliexpress.com/w/wholesale-N-male-to-SMA-male.html" target="_blank" rel="noopener">AliExpress</a> &bull;
+            Lojas de eletronicos
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#9968;</div>
+          <div class="hw-name">Tripie ou Mastro</div>
+          <div class="hw-spec">Para posicionar a antena. Altura minima: 2m do solo.</div>
+          <div class="hw-price">R$50 — R$150</div>
+          <div class="hw-where">
+            <a href="https://www.mercadolivre.com.br/" target="_blank" rel="noopener">MercadoLivre</a> &bull;
+            Lojas de fotografia
+          </div>
+        </div>
+      </div>
+
+      <h3>&#128269; Metodo de Uso</h3>
+      <div class="visual-diagram">
+        <div class="diagram-title">Fluxo do Sinal GOES</div>
+        <div class="diagram-row">
+          <div class="diagram-box accent">&#128752; GOES-East/West<br><small>1694.1 MHz L-Band</small><small>36.000 km altitude</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box">&#127919; Grade Parabolica<br><small>60x100cm minimo</small><small>Apontar: azimuth + elevation</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box warn">&#128225; SAWBird+ GOES<br><small>LNA + Filtro SAW</small><small>1688-1694 MHz</small></div>
+        </div>
+        <div class="diagram-arrow-down">&#11015;</div>
+        <div class="diagram-row">
+          <div class="diagram-box ok">&#128225; RTL-SDR V3<br><small>Bias-tee alimenta SAWBird</small><small>Sample: 2.4 MHz</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box accent">&#128241; Raspberry Pi<br><small>goesrecv demodula HRIT</small><small>goesproc processa imagens</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box ok">&#127760; Imagens + EMWIN<br><small>Full-disk, IR, WV</small></div>
+        </div>
+      </div>
+
+      <h3>&#127777; Alinhamento da Antena</h3>
+      <ul class="method-list">
+        <li>
+          <span class="method-icon">&#128205;</span>
+          <div><strong>Descobrir posicao do GOES:</strong> Acesse <a href="https://www.agsattrack.com" target="_blank" rel="noopener">agsattrack.com</a> ou <a href="https://www.n2yo.com" target="_blank" rel="noopener">n2yo.com</a>. Insira suas coordenadas. Anote azimuth (bussola) e elevation (angulo vertical).</div>
+        </li>
+        <li>
+          <span class="method-icon">&#129517;</span>
+          <div><strong>Bussola analoga:</strong> Nao use celular (erro 20-30 graus). Compre bussola analoga (R$15).</div>
+        </li>
+        <li>
+          <span class="method-icon">&#128200;</span>
+          <div><strong>Monitorar Viterbi Error Rate:</strong> Rode <code>goesrecv -v -i 1 -c goesrecv.conf</code>. Valor &lt; 100 = otimo. &gt; 2000 = sem sinal.</div>
+        </li>
+      </ul>
+
+      <div class="info-box">
+        <strong>&#128161; Alternativa: SatDump</strong>
+        <a href="https://www.satdump.org" target="_blank" rel="noopener">SatDump</a> e mais completo que goestools. Suporta GOES, Meteor, FY-4A. Interface grafica.
+      </div>
+
+      <div class="info-box">
+        <strong>&#128161; Dica: Modificar grade WiFi 2.4GHz</strong>
+        Grade WiFi de 2.4GHz (~R$150) funciona em 1.7GHz para GOES. Remova feed 5GHz, instale dipole/helix 1.7GHz no ponto focal.
+      </div>
+    </div>
+  </section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HF SHORTWAVE — ALCANCE GLOBAL                                          -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="tier-hf" class="project">
+    <div class="project-header">
+      <div class="icon">&#128266;</div>
+      <div class="meta">
+        <h2>Alcance Global — HF Shortwave</h2>
+        <p>Recepcao global via ionosfera. NAVTEX, emergencia maritima, alertas de qualquer continente.</p>
+      </div>
+      <div class="badges">
+        <span class="badge badge-cost">R$300 — R$500</span>
+        <span class="badge badge-diff">Intermediario</span>
+        <span class="badge badge-range">Global (1000+ km)</span>
+      </div>
+    </div>
+    <div class="project-body">
+
+      <h3>&#128161; O que voce recebe</h3>
+      <p>Ondas curtas (HF, 3-30 MHz) viajam globalmente refletidas pela ionosfera:</p>
+      <ul>
+        <li><strong>NAVTEX (518/490 kHz):</strong> navegacao + meteorologia maritima</li>
+        <li><strong>EPIRB (2182 kHz):</strong> emergencia maritima internacional</li>
+        <li><strong>WEFAX:</strong> imagens meteorologicas por radio</li>
+        <li><strong>WWV (5/10/15 MHz):</strong> hora precisa + alertas NWS</li>
+      </ul>
+
+      <h3>&#128296; Hardware</h3>
+      <div class="hardware-grid">
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;</div>
+          <div class="hw-name">RTL-SDR + Upconverter</div>
+          <div class="hw-spec">Necessario upconverter (Ham It Up v2) para receber HF. IF output: 125MHz.</div>
+          <div class="hw-price">R$200 — R$350</div>
+          <div class="hw-where">
+            <a href="https://www.rtl-sdr.com/" target="_blank" rel="noopener">rtl-sdr.com</a> &bull;
+            <a href="https://www.nooelec.com/store/ham-it-up.html" target="_blank" rel="noopener">nooelec.com</a> (Ham It Up)
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128225;&#65039;</div>
+          <div class="hw-name">Antena Long Wire / End-Fed</div>
+          <div class="hw-spec">Fio de 10-20m esticado horizontalmente. Minimo 7m. Mais simples que parece.</div>
+          <div class="hw-price">R$10 — R$50 (DIY)</div>
+          <div class="hw-where">Material: fio de cobre, isolador, cabo coaxial</div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128241;</div>
+          <div class="hw-name">PC ou Raspberry Pi</div>
+          <div class="hw-spec">SDR software: SDR#, GQRX, SDR++. PC funciona melhor que Pi para HF.</div>
+          <div class="hw-price">R$250+</div>
+          <div class="hw-where">
+            <a href="https://www.raspberrypi.com/" target="_blank" rel="noopener">raspberrypi.com</a> &bull;
+            Qualquer PC Linux/Windows
+          </div>
+        </div>
+        <div class="hw-card">
+          <div class="hw-visual">&#128268;</div>
+          <div class="hw-name">SWL Antenna Balun (opcional)</div>
+          <div class="hw-spec">Melhora rejeicao de RFI (interferencia de rede eletrica).</div>
+          <div class="hw-price">R$30 — R$80</div>
+          <div class="hw-where">
+            <a href="https://www.aliexpress.com/w/wholesale-antenna-balun.html" target="_blank" rel="noopener">AliExpress</a>
+          </div>
+        </div>
+      </div>
+
+      <h3>&#127973; Frequencias de Emergencia</h3>
+      <div class="freq-grid">
+        <div class="freq-card">
+          <div class="freq-value">2182 kHz</div>
+          <div class="freq-label">Distress maritimo (SSB voice)</div>
+        </div>
+        <div class="freq-card">
+          <div class="freq-value">518 kHz</div>
+          <div class="freq-label">NAVTEX — navegacao (FSK 50 baud)</div>
+        </div>
+        <div class="freq-card">
+          <div class="freq-value">490 kHz</div>
+          <div class="freq-label">NAVTEX alternativo</div>
+        </div>
+        <div class="freq-card">
+          <div class="freq-value">9.9995 MHz</div>
+          <div class="freq-label">WWV — hora + alertas NWS</div>
+        </div>
+        <div class="freq-card">
+          <div class="freq-value">14.9995 MHz</div>
+          <div class="freq-label">WWV — hora + alertas NWS</div>
+        </div>
+      </div>
+
+      <h3>&#128269; Metodo de Uso</h3>
+      <div class="visual-diagram">
+        <div class="diagram-title">Fluxo do Sinal HF</div>
+        <div class="diagram-row">
+          <div class="diagram-box accent">&#127760; Ionosfera<br><small>Reflete ondas HF</small><small>3-30 MHz global</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box">&#128225; Long Wire (10-20m)<br><small>Antena simples</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box warn">&#128225; Upconverter HF<br><small>Ham It Up v2, IF: 125 MHz</small></div>
+        </div>
+        <div class="diagram-arrow-down">&#11015;</div>
+        <div class="diagram-row">
+          <div class="diagram-box ok">&#128225; RTL-SDR<br><small>Demodula IF 125MHz</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box accent">&#128241; PC / Pi<br><small>SDR++ / GQRX / SDR#</small><small>Demodula SSB/FM/AM</small></div>
+          <div class="diagram-arrow">&#10132;</div>
+          <div class="diagram-box ok">&#128279; Decodificacao<br><small>multimon-ng / direwolf</small><small>NAVTEX / alertas</small></div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>&#128161; Hora certa e alertas</strong>
+        O WWV transmite hora precisa + alertas NWS a cada hora em 5/10/15 MHz. Funciona globalmente. Use para sincronizar timestamps do dashboard quando GPS/RTC falhar.
+      </div>
+    </div>
+  </section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ONDE COMPRAR                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="onde-comprar" class="project">
+    <div class="project-header">
+      <div class="icon">&#128722;</div>
+      <div class="meta">
+        <h2>Onde Comprar — Lojas Oficiais</h2>
+        <p>Links diretos para fabricantes e lojas confiaveis.</p>
+      </div>
+    </div>
+    <div class="project-body">
+
+      <h3>&#128279; Fabricantes (direto do fabricante)</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Fabricante</th><th>Produtos</th><th>Site</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>RTL-SDR Blog</td>
+            <td>RTL-SDR V3/V4, diplexers, antenas</td>
+            <td><a href="https://www.rtl-sdr.com/" target="_blank" rel="noopener">rtl-sdr.com</a></td>
+          </tr>
+          <tr>
+            <td>Nooelec</td>
+            <td>SAWBird+ NOAA/GOES, Ham It Up, antenas</td>
+            <td><a href="https://www.nooelec.com/" target="_blank" rel="noopener">nooelec.com</a></td>
+          </tr>
+          <tr>
+            <td>Heltec</td>
+            <td>WiFi LoRa 32 V3, modulos LoRa</td>
+            <td><a href="https://heltec.org/" target="_blank" rel="noopener">heltec.org</a></td>
+          </tr>
+          <tr>
+            <td>LILYGO</td>
+            <td>T-Beam SX1262, ESP32 boards</td>
+            <td><a href="https://www.lilygo.cc/" target="_blank" rel="noopener">lilygo.cc</a></td>
+          </tr>
+          <tr>
+            <td>RAKwireless</td>
+            <td>WisBlock, modulos profissionais LoRa</td>
+            <td><a href="https://rakwireless.com/" target="_blank" rel="noopener">rakwireless.com</a></td>
+          </tr>
+          <tr>
+            <td>Seeed Studio</td>
+            <td>XIAO ESP32S3, sensores, modulos</td>
+            <td><a href="https://www.seeedstudio.com/" target="_blank" rel="noopener">seeedstudio.com</a></td>
+          </tr>
+          <tr>
+            <td>Raspberry Pi</td>
+            <td>Raspberry Pi 4/5, Pi Pico</td>
+            <td><a href="https://www.raspberrypi.com/" target="_blank" rel="noopener">raspberrypi.com</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>&#127760; Marketplace Internacional</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Loja</th><th>Vantagem</th><th>Link</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AliExpress</td>
+            <td>Menor preco. Frete gratis para Brasil. 15-30 dias.</td>
+            <td><a href="https://www.aliexpress.com/" target="_blank" rel="noopener">aliexpress.com</a></td>
+          </tr>
+          <tr>
+            <td>Amazon US</td>
+            <td>Entrega mais rapida. Devolucao facil.</td>
+            <td><a href="https://www.amazon.com/" target="_blank" rel="noopener">amazon.com</a></td>
+          </tr>
+          <tr>
+            <td>DigiKey</td>
+            <td>Componentes profissionais. Envio internacional.</td>
+            <td><a href="https://www.digikey.com/" target="_blank" rel="noopener">digikey.com</a></td>
+          </tr>
+          <tr>
+            <td>Mouser</td>
+            <td>Componentes profissionais. Envio internacional.</td>
+            <td><a href="https://www.mouser.com/" target="_blank" rel="noopener">mouser.com</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>&#127463;&#127479; Brasil</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Loja</th><th>Vantagem</th><th>Link</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MercadoLivre</td>
+            <td>Entrega rapida. Comprador protegido.</td>
+            <td><a href="https://www.mercadolivre.com.br/" target="_blank" rel="noopener">mercadolivre.com.br</a></td>
+          </tr>
+          <tr>
+            <td>Amazon BR</td>
+            <td>Prime. Envio rapido.</td>
+            <td><a href="https://www.amazon.com.br/" target="_blank" rel="noopener">amazon.com.br</a></td>
+          </tr>
+          <tr>
+            <td>Lojas de eletronicos (Sao Paulo)</td>
+            <td>Compra presencial. Cabo coaxial, conectores, materiais.</td>
+            <td>Rua 25 de Marco, Santa Ifigenia</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>&#128296; Lista de Compras por Tier</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr><th>Tier</th><th>Itens Necessarios</th><th>Custo Estimado</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Meshtastic</td>
+            <td>Heltec LoRa 32 V3 + bateria 18650</td>
+            <td>R$120</td>
+          </tr>
+          <tr>
+            <td>RTL-SDR + NWR</td>
+            <td>RTL-SDR V3 + Raspberry Pi 4 + antena DIY + cabo RG-58</td>
+            <td>R$400</td>
+          </tr>
+          <tr>
+            <td>NOAA APT</td>
+            <td>RTL-SDR + antena V-Dipole DIY + SAWBird+ NOAA (opcional)</td>
+            <td>R$250 — R$450</td>
+          </tr>
+          <tr>
+            <td>GOES</td>
+            <td>RTL-SDR V3 + SAWBird+ GOES + grade parabolica + Raspberry Pi 4 + adaptadores</td>
+            <td>R$800 — R$1200</td>
+          </tr>
+          <tr>
+            <td>HF Shortwave</td>
+            <td>RTL-SDR + Ham It Up v2 + antena long wire 15m + balun</td>
+            <td>R$350 — R$500</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="danger-box">
+        <strong>&#9888;&#65039; Regulamentacao de Radio</strong>
+        No Brasil, operacoes em ISM bands (433/915 MHz) sao permitidas sem licenca para uso nao-comercial. Frequencias de amadora (HF, 2m, 70cm) exigem licenca da ANATEL. Transmitir em frequencias de emergencia sem autorizacao e crime federal.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <p>Guias de Hardware Offline — Sobrevivencia</p>
+  <p style="margin-top: 0.5rem;">Projetos open-source. Hardware acessivel. Comunidade global.</p>
+  <p style="margin-top: 0.5rem; color: var(--accent);">Ultima atualizacao: Setembro 2026</p>
+</footer>
+
+</body>
+</html>

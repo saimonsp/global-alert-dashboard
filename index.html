@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Global Natural Events Dashboard</title>
+    <link rel="preconnect" href="https://tile.openstreetmap.org">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="css/style.css?v=20260908c">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1><i data-lucide="radar" aria-hidden="true"></i> Global Natural Events</h1>
+          <p>Monitoramento global de eventos naturais registrados por fontes publicas</p>
+        </div>
+        <div class="topbar-actions">
+          <div id="tv-clock" class="tv-clock"><strong>--:--:--</strong><span></span></div>
+          <button id="refresh-button" type="button" class="icon-button" title="Atualizar agora" aria-label="Atualizar agora"><i data-lucide="refresh-cw" aria-hidden="true"></i></button>
+          <button id="settings-button" type="button" class="icon-button" title="Configuracoes" aria-label="Abrir configuracoes"><i data-lucide="settings" aria-hidden="true"></i></button>
+          <span id="new-events-badge" class="new-events-badge hidden" aria-live="polite"></span>
+          <div class="online-pill ok" aria-live="polite" aria-label="Estado geral das fontes"><span aria-hidden="true"></span><strong id="global-status-label">ONLINE</strong></div>
+          <a id="tv-button" class="tv-enter" href="?tv=1" title="Abrir modo TV (exibicao passiva)" aria-label="Abrir modo TV"><i data-lucide="tv" aria-hidden="true"></i> Modo TV</a>
+          <a class="tv-enter" href="offline-survival.html" title="Manual de sobrevivencia offline — receptores de alerta via radio e satelite" aria-label="Manual offline"><i data-lucide="radio" aria-hidden="true"></i> Offline</a>
+          <span id="offline-badge" class="offline-badge hidden" role="status">SEM CONEXAO</span>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="stats-grid" aria-label="Indicadores">
+          <article class="stat-card">
+            <div class="stat-icon earthquake-icon"><i data-lucide="activity" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Terremotos</span>
+              <strong id="earthquake-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon storm-icon"><i data-lucide="cloud-lightning" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Tempestades</span>
+              <strong id="storm-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon wind-icon"><i data-lucide="wind" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Ventos &gt;50 km/h</span>
+              <strong id="wind-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon rain-icon"><i data-lucide="cloud-rain" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Chuvas</span>
+              <strong id="rain-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon flood-icon"><i data-lucide="droplets" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Enchentes</span>
+              <strong id="flood-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon fire-icon"><i data-lucide="flame" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Queimadas</span>
+              <strong id="fire-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon volcano-icon"><i data-lucide="triangle-alert" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Vulcoes</span>
+              <strong id="volcano-count">--</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-icon time-icon"><i data-lucide="clock-3" aria-hidden="true"></i></div>
+            <div>
+              <span class="stat-label">Atualizacao</span>
+              <strong id="last-update">--:--:--</strong>
+            </div>
+          </article>
+        </section>
+
+        <section class="map-panel" aria-label="Mapa de eventos naturais">
+          <div id="map" aria-label="Mapa-mundi interativo com eventos naturais"></div>
+          <div id="loading" class="loading-overlay">Carregando eventos...</div>
+          <div id="critical-banner" class="critical-banner hidden" role="alert"></div>
+          <div id="local-weather" class="local-weather hidden" aria-live="polite" aria-label="Clima local da regiao centralizada"></div>
+          <div class="legend" aria-label="Legenda do mapa">
+            <h2>Legenda</h2>
+            <div><span class="dot eq eq-low"></span> Terremoto M2-3</div>
+            <div><span class="dot eq eq-mid"></span> Terremoto M3-4</div>
+            <div><span class="dot eq eq-high"></span> Terremoto M4-5</div>
+            <div><span class="dot eq eq-very-high"></span> Terremoto M5-6</div>
+            <div><span class="dot eq eq-extreme"></span> Terremoto M6+</div>
+            <div><span class="storm-symbol"></span> Tempestade</div>
+            <div><span class="wind-symbol"></span> Vento &gt;50 km/h</div>
+            <div><span class="rain-symbol"></span> Chuva (fraca / moderada / forte)</div>
+            <div><span class="flood-symbol"></span> Enchentes / Risco</div>
+            <div><span class="fire-symbol"></span> Queimadas (INPE)</div>
+            <div><span class="volcano-symbol"></span> Vulcoes (USGS)</div>
+            <div class="heat-label">Concentracao: baixo -&gt; alto</div>
+          </div>
+          <div id="search-box" class="search-box" role="search">
+            <i data-lucide="search" class="search-icon" aria-hidden="true"></i>
+            <input id="search-input" type="search" placeholder="Buscar localidade..." autocomplete="off" aria-label="Buscar localidade">
+            <button id="locate-button" type="button" class="locate-button" title="Minha localizacao" aria-label="Buscar minha localizacao atual"><i data-lucide="crosshair" aria-hidden="true"></i></button>
+            <ul id="search-results" class="search-results hidden" role="listbox" aria-label="Resultados da busca"></ul>
+          </div>
+          <div id="fs-hint" class="fs-hint hidden">Clique na tela para ativar a exibicao em tela cheia</div>
+          <button id="tv-exit" type="button" class="tv-exit">Sair do modo TV (Esc)</button>
+          <div id="ticker" class="ticker" aria-hidden="true"><div id="ticker-track" class="ticker-track"></div></div>
+        </section>
+
+        <aside class="side-panel">
+          <details class="panel-fold" id="fold-filters" open>
+            <summary><i data-lucide="sliders-horizontal" aria-hidden="true"></i> Camadas do Mapa <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i></summary>
+            <div class="fold-body">
+              <p class="filter-hint">Selecione as camadas para exibir no mapa</p>
+              <label class="check-row"><input id="filter-earthquakes" type="checkbox"> <i data-lucide="activity" aria-hidden="true"></i> Terremotos</label>
+              <label class="check-row"><input id="filter-storms" type="checkbox"> <i data-lucide="cloud-lightning" aria-hidden="true"></i> Tempestades</label>
+              <label class="check-row"><input id="filter-winds" type="checkbox"> <i data-lucide="wind" aria-hidden="true"></i> Ventos fortes (&gt;50 km/h)</label>
+              <label class="check-row"><input id="filter-rain" type="checkbox"> <i data-lucide="cloud-rain" aria-hidden="true"></i> Chuvas</label>
+              <label class="check-row"><input id="filter-floods" type="checkbox"> <i data-lucide="droplets" aria-hidden="true"></i> Enchentes</label>
+              <label class="check-row"><input id="filter-fires" type="checkbox"> <i data-lucide="flame" aria-hidden="true"></i> Queimadas (INPE)</label>
+              <label class="check-row"><input id="filter-volcanoes" type="checkbox"> <i data-lucide="triangle-alert" aria-hidden="true"></i> Vulcoes (USGS)</label>
+              <label for="magnitude-filter" class="range-label">Magnitude minima <strong id="magnitude-value">2.5</strong></label>
+              <input id="magnitude-filter" type="range" min="2.5" max="8" value="2.5" step="0.1">
+              <label for="period-filter">Periodo</label>
+              <select id="period-filter">
+                <option value="6h">Ultimas 6 horas</option>
+                <option value="24h" selected>Ultimas 24 horas</option>
+                <option value="7d">Ultimos 7 dias</option>
+              </select>
+              <button id="world-button" type="button" class="action-button"><i data-lucide="globe-2" aria-hidden="true"></i> Ver mundo inteiro</button>
+            </div>
+          </details>
+
+          <section class="alerts" aria-label="Alertas recentes e boletim sismico">
+            <div class="panel-title-row">
+              <h2><i data-lucide="bell-ring" aria-hidden="true"></i> Alertas</h2>
+              <div class="tab-bar" role="tablist" aria-label="Alternar entre alertas e boletim sismico">
+                <button id="tab-alerts" type="button" class="tab active" role="tab" aria-selected="true">Alertas</button>
+                <button id="tab-bulletin" type="button" class="tab" role="tab" aria-selected="false">Boletim Sismico</button>
+              </div>
+            </div>
+            <div id="alerts-list" class="alerts-list"></div>
+            <div id="bulletin-view" class="bulletin-view hidden">
+              <p id="bulletin-summary" class="bulletin-summary"></p>
+              <div class="table-scroll">
+                <table class="bulletin-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Hora</th>
+                      <th scope="col" abbr="Magnitude">Mag</th>
+                      <th scope="col">Local</th>
+                      <th scope="col" title="Profundidade em km">Prof.</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bulletin-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <details class="panel-fold mini-monitor" open>
+            <summary><i data-lucide="thermometer-sun" aria-hidden="true"></i> Extremos do Clima <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i></summary>
+            <div class="fold-body">
+              <div id="climate-extremes" class="mini-rows"><p class="alert-meta">Aguardando dados meteorologicos...</p></div>
+            </div>
+          </details>
+
+          <details class="panel-fold mini-monitor" open>
+            <summary><i data-lucide="sun" aria-hidden="true"></i> Boletim Solar <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i></summary>
+            <div class="fold-body">
+              <div id="solar-bulletin" class="mini-rows"><p class="alert-meta">Aguardando dados da NOAA SWPC...</p></div>
+              <p class="mini-source">Fonte: NOAA Space Weather Prediction Center · raios-X (GOES) e indice Kp</p>
+            </div>
+          </details>
+
+          <details class="panel-fold" id="fold-status">
+            <summary><i data-lucide="radio-tower" aria-hidden="true"></i> Fontes <span id="api-status-count" class="fold-hint"></span> <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i></summary>
+            <div class="fold-body">
+              <div class="source-row">
+                <span>USGS</span>
+                <span class="api-status-meta"><time id="updated-usgs">--:--:--</time><span id="status-usgs" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-usgs" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>NASA EONET</span>
+                <span class="api-status-meta"><time id="updated-eonet">--:--:--</time><span id="status-eonet" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-eonet" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>Open-Meteo</span>
+                <span class="api-status-meta"><time id="updated-weather">--:--:--</time><span id="status-weather" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-weather" class="quota-info has-bar"><span class="quota-text">0/10.000 chamadas (0%)</span><span class="quota-bar"><span class="quota-fill" style="width:0%"></span></span></div>
+              <div class="source-row">
+                <span>Ventos (Open-Meteo)</span>
+                <span class="api-status-meta"><time id="updated-winds">--:--:--</time><span id="status-winds" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-winds" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>Chuvas (Open-Meteo)</span>
+                <span class="api-status-meta"><time id="updated-rain">--:--:--</time><span id="status-rain" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-rain" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>INMET (Brasil)</span>
+                <span class="api-status-meta"><time id="updated-inmet">--:--:--</time><span id="status-inmet" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-inmet" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>NOAA SWPC (solar)</span>
+                <span class="api-status-meta"><time id="updated-solar">--:--:--</time><span id="status-solar" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-solar" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>Enchentes (ANA)</span>
+                <span class="api-status-meta"><time id="updated-floods">--:--:--</time><span id="status-floods" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-floods" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>Queimadas (INPE)</span>
+                <span class="api-status-meta"><time id="updated-fires">--:--:--</time><span id="status-fires" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-fires" class="quota-info">0 chamadas hoje</div>
+              <div class="source-row">
+                <span>Vulcoes (USGS VHP)</span>
+                <span class="api-status-meta"><time id="updated-volcanoes">--:----</time><span id="status-volcanoes" class="status idle">IDLE</span></span>
+              </div>
+              <div id="quota-volcanoes" class="quota-info">0 chamadas hoje</div>
+
+              <div class="offline-divider"><i data-lucide="radio" aria-hidden="true"></i> Fontes Offline</div>
+              <div class="source-row offline-source">
+                <span>NWR (RTL-SDR)</span>
+                <span class="api-status-meta"><span id="status-offline-nwr_rtlsdr" class="status idle">IDLE</span></span>
+              </div>
+              <div class="source-row offline-source">
+                <span>GOES (Satelite)</span>
+                <span class="api-status-meta"><span id="status-offline-goes_satellite" class="status idle">IDLE</span></span>
+              </div>
+              <div class="source-row offline-source">
+                <span>Meshtastic (LoRa)</span>
+                <span class="api-status-meta"><span id="status-offline-meshtastic_lora" class="status idle">IDLE</span></span>
+              </div>
+              <div class="source-row offline-source">
+                <span>HF (Ondas Curtas)</span>
+                <span class="api-status-meta"><span id="status-offline-hf_radio" class="status idle">IDLE</span></span>
+              </div>
+            </div>
+          </details>
+
+          <details class="panel-fold" id="fold-sources">
+            <summary><i data-lucide="database" aria-hidden="true"></i> Fontes de dados <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i></summary>
+            <div class="fold-body sources-list">
+              <a href="https://earthquake.usgs.gov/earthquakes/feed/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> USGS Earthquake Hazards Program</a>
+              <a href="https://www.seismicportal.eu/standing_order/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> EMSC SeismicPortal (fallback)</a>
+              <a href="https://eonet.gsfc.nasa.gov/docs/v3" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> NASA EONET</a>
+              <a href="https://www.gdacs.org/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> GDACS (fallback)</a>
+              <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> Open-Meteo Weather API</a>
+              <a href="https://api.met.no/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> MET Norway (fallback meteorologico)</a>
+              <a href="https://weather-api.site/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> weather-api.site (fallback meteorologico)</a>
+              <a href="https://portal.inmet.gov.br/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> INMET (estacoes automaticas)</a>
+              <a href="https://services.swpc.noaa.gov/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> NOAA SWPC (atividade solar)</a>
+              <a href="https://volcanoes.usgs.gov/" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> USGS Volcano Hazards Program</a>
+              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i> OpenStreetMap</a>
+              <a href="offline-survival.html"><i data-lucide="radio" aria-hidden="true"></i> Manual de Sobrevivencia Offline (radio + satelite)</a>
+            </div>
+          </details>
+        </aside>
+      </main>
+      <footer id="status-bar" class="status-bar hidden" role="status">
+        <span id="status-bar-text"></span>
+        <button id="retry-button" type="button">Retentar</button>
+      </footer>
+    </div>
+
+    <div id="settings-overlay" class="settings-overlay hidden" aria-hidden="true"></div>
+    <aside id="settings-drawer" class="settings-drawer" role="dialog" aria-label="Configuracoes" aria-hidden="true">
+      <div class="settings-header">
+        <h2><i data-lucide="settings" aria-hidden="true"></i> Configuracoes</h2>
+        <button id="settings-close" type="button" class="settings-close-btn" title="Fechar" aria-label="Fechar configuracoes"><i data-lucide="x" aria-hidden="true"></i></button>
+      </div>
+      <div class="settings-body">
+
+        <section class="settings-group">
+          <h3><i data-lucide="palette" aria-hidden="true"></i> Aparencia</h3>
+          <div class="setting-row">
+            <label for="setting-theme">Tema</label>
+            <div class="theme-options" id="setting-theme">
+              <button type="button" class="theme-btn active" data-theme="dark" title="Escuro"><i data-lucide="moon" aria-hidden="true"></i> Escuro</button>
+              <button type="button" class="theme-btn" data-theme="light" title="Claro"><i data-lucide="sun" aria-hidden="true"></i> Claro</button>
+              <button type="button" class="theme-btn" data-theme="amoled" title="AMOLED"><i data-lucide="monitor" aria-hidden="true"></i> AMOLED</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-accent">Cor de destaque</label>
+            <div class="accent-options" id="setting-accent">
+              <button type="button" class="accent-btn active" data-accent="#4cc9c0" style="--swatch:#4cc9c0" title="Ciano"></button>
+              <button type="button" class="accent-btn" data-accent="#60a5fa" style="--swatch:#60a5fa" title="Azul"></button>
+              <button type="button" class="accent-btn" data-accent="#a78bfa" style="--swatch:#a78bfa" title="Roxo"></button>
+              <button type="button" class="accent-btn" data-accent="#f472b6" style="--swatch:#f472b6" title="Rosa"></button>
+              <button type="button" class="accent-btn" data-accent="#34d399" style="--swatch:#34d399" title="Verde"></button>
+              <button type="button" class="accent-btn" data-accent="#fb923c" style="--swatch:#fb923c" title="Laranja"></button>
+              <button type="button" class="accent-btn" data-accent="#facc15" style="--swatch:#facc15" title="Amarelo"></button>
+              <button type="button" class="accent-btn" data-accent="#f87171" style="--swatch:#f87171" title="Vermelho"></button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-font-size">Tamanho da fonte</label>
+            <div class="range-with-value">
+              <input id="setting-font-size" type="range" min="12" max="20" value="14" step="1">
+              <span id="setting-font-size-value">14px</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-animations">Animacoes</label>
+            <label class="toggle">
+              <input id="setting-animations" type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="map" aria-hidden="true"></i> Mapa</h3>
+          <div class="setting-row">
+            <label for="setting-map-style">Estilo do mapa</label>
+            <select id="setting-map-style">
+              <option value="cartodark">CARTO Escuro</option>
+              <option value="openstreetmap">OpenStreetMap</option>
+              <option value="openstreetmaphot">OSM Humanitario</option>
+              <option value="cartovoyager">CARTO Voyager</option>
+              <option value="satellite">Satelite (Esri)</option>
+              <option value="terrain">Terreno (Esri)</option>
+              <option value="relief">Relevo (Esri)</option>
+              <option value="topo">OpenTopoMap</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-marker-size">Tamanho dos marcadores</label>
+            <div class="range-with-value">
+              <input id="setting-marker-size" type="range" min="0.6" max="2" value="1" step="0.1">
+              <span id="setting-marker-size-value">1.0x</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-heat-overlay">Sobreposicao de concentracao</label>
+            <label class="toggle">
+              <input id="setting-heat-overlay" type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-cluster">Agrupar marcadores proximos</label>
+            <label class="toggle">
+              <input id="setting-cluster" type="checkbox">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="database" aria-hidden="true"></i> Fontes de dados</h3>
+          <div class="setting-row">
+            <label for="setting-source-usgs"><i data-lucide="activity" aria-hidden="true"></i> USGS (Terremotos)</label>
+            <label class="toggle">
+              <input id="setting-source-usgs" type="checkbox" checked data-source="usgs">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-eonet"><i data-lucide="cloud-lightning" aria-hidden="true"></i> NASA EONET (Tempestades)</label>
+            <label class="toggle">
+              <input id="setting-source-eonet" type="checkbox" checked data-source="eonet">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-openmeteo"><i data-lucide="cloud-rain" aria-hidden="true"></i> Open-Meteo (Clima)</label>
+            <label class="toggle">
+              <input id="setting-source-openmeteo" type="checkbox" checked data-source="openmeteo">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-inmet"><i data-lucide="thermometer" aria-hidden="true"></i> INMET (Brasil)</label>
+            <label class="toggle">
+              <input id="setting-source-inmet" type="checkbox" checked data-source="inmet">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-noaa"><i data-lucide="sun" aria-hidden="true"></i> NOAA SWPC (Solar)</label>
+            <label class="toggle">
+              <input id="setting-source-noaa" type="checkbox" checked data-source="solar">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-inpe"><i data-lucide="flame" aria-hidden="true"></i> INPE (Queimadas)</label>
+            <label class="toggle">
+              <input id="setting-source-inpe" type="checkbox" checked data-source="fires">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-volcanoes"><i data-lucide="triangle-alert" aria-hidden="true"></i> USGS VHP (Vulcoes)</label>
+            <label class="toggle">
+              <input id="setting-source-volcanoes" type="checkbox" checked data-source="volcanoes">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-source-floods"><i data-lucide="droplets" aria-hidden="true"></i> ANA (Enchentes)</label>
+            <label class="toggle">
+              <input id="setting-source-floods" type="checkbox" checked data-source="floods">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="radio" aria-hidden="true"></i> Fontes Offline</h3>
+          <p class="settings-hint">Receptores locais de radio e satelite. Requer hardware externo (RTL-SDR, receptor GOES, etc). Veja o <a href="offline-survival.html" target="_blank">Manual de Sobrevivencia</a> para configurar.</p>
+
+          <div class="setting-row">
+            <label for="offline-nwr_rtlsdr-enabled"><i data-lucide="radio" aria-hidden="true"></i> NWR (RTL-SDR)</label>
+            <label class="toggle">
+              <input id="offline-nwr_rtlsdr-enabled" type="checkbox" data-offline-key="nwr_rtlsdr" data-offline-field="enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row offline-endpoint-row">
+            <label for="offline-nwr_rtlsdr-endpoint">Endpoint WebSocket</label>
+            <input id="offline-nwr_rtlsdr-endpoint" type="text" class="setting-input" placeholder="ws://localhost:8081" data-offline-key="nwr_rtlsdr" data-offline-field="endpoint">
+          </div>
+
+          <div class="setting-row">
+            <label for="offline-goes_satellite-enabled"><i data-lucide="satellite" aria-hidden="true"></i> GOES (Satelite)</label>
+            <label class="toggle">
+              <input id="offline-goes_satellite-enabled" type="checkbox" data-offline-key="goes_satellite" data-offline-field="enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row offline-endpoint-row">
+            <label for="offline-goes_satellite-endpoint">Endpoint WebSocket</label>
+            <input id="offline-goes_satellite-endpoint" type="text" class="setting-input" placeholder="ws://localhost:8082" data-offline-key="goes_satellite" data-offline-field="endpoint">
+          </div>
+
+          <div class="setting-row">
+            <label for="offline-meshtastic_lora-enabled"><i data-lucide="antenna" aria-hidden="true"></i> Meshtastic (LoRa)</label>
+            <label class="toggle">
+              <input id="offline-meshtastic_lora-enabled" type="checkbox" data-offline-key="meshtastic_lora" data-offline-field="enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row offline-endpoint-row">
+            <label for="offline-meshtastic_lora-endpoint">Endpoint WebSocket</label>
+            <input id="offline-meshtastic_lora-endpoint" type="text" class="setting-input" placeholder="ws://localhost:8083" data-offline-key="meshtastic_lora" data-offline-field="endpoint">
+          </div>
+
+          <div class="setting-row">
+            <label for="offline-hf_radio-enabled"><i data-lucide="radio-tower" aria-hidden="true"></i> HF (Ondas Curtas)</label>
+            <label class="toggle">
+              <input id="offline-hf_radio-enabled" type="checkbox" data-offline-key="hf_radio" data-offline-field="enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row offline-endpoint-row">
+            <label for="offline-hf_radio-endpoint">Endpoint WebSocket</label>
+            <input id="offline-hf_radio-endpoint" type="text" class="setting-input" placeholder="ws://localhost:8084" data-offline-key="hf_radio" data-offline-field="endpoint">
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="bell-ring" aria-hidden="true"></i> Notificacoes</h3>
+          <div class="setting-row">
+            <label for="setting-notifications"><i data-lucide="bell" aria-hidden="true"></i> Notificacoes do navegador</label>
+            <label class="toggle">
+              <input id="setting-notifications" type="checkbox">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-sound"><i data-lucide="volume-2" aria-hidden="true"></i> Alertas sonoros</label>
+            <label class="toggle">
+              <input id="setting-sound" type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label for="setting-critical-only">Apenas alertas criticos</label>
+            <label class="toggle">
+              <input id="setting-critical-only" type="checkbox">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="refresh-cw" aria-hidden="true"></i> Atualizacao</h3>
+          <div class="setting-row">
+            <label for="setting-refresh-interval">Intervalo de atualizacao</label>
+            <select id="setting-refresh-interval">
+              <option value="30">30 segundos</option>
+              <option value="60" selected>1 minuto</option>
+              <option value="120">2 minutos</option>
+              <option value="300">5 minutos</option>
+              <option value="600">10 minutos</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-auto-refresh">Atualizar automaticamente</label>
+            <label class="toggle">
+              <input id="setting-auto-refresh" type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="tv" aria-hidden="true"></i> Modo TV</h3>
+          <div class="setting-row">
+            <label for="setting-tv-rotation">Rotacao automatica</label>
+            <select id="setting-tv-rotation">
+              <option value="15">A cada 15 segundos</option>
+              <option value="30" selected>A cada 30 segundos</option>
+              <option value="60">A cada 1 minuto</option>
+              <option value="120">A cada 2 minutos</option>
+              <option value="0">Desativada</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-tv-burnin">Protecao contra burn-in</label>
+            <label class="toggle">
+              <input id="setting-tv-burnin" type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3><i data-lucide="info" aria-hidden="true"></i> Sobre</h3>
+          <div class="about-info">
+            <p><strong>Global Natural Events Dashboard</strong></p>
+            <p>Monitoramento em tempo real de terremotos, tempestades, ventos, chuvas, enchentes, queimadas e vulcoes.</p>
+            <p class="about-version">Versao 2.0 · Setembro 2026</p>
+            <a href="https://github.com/anomalyco/opencode" target="_blank" rel="noopener noreferrer" class="about-link"><i data-lucide="github" aria-hidden="true"></i> Codigo fonte</a>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script type="module" src="js/app.js?v=20260908c"></script>
+  </body>
+</html>

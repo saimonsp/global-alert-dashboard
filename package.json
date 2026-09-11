@@ -1,0 +1,14 @@
+{
+  "name": "global-alert-dashboard",
+  "version": "1.1.0",
+  "description": "Dashboard web para monitorar e visualizar eventos naturais registrados por fontes publicas em um mapa-mundi interativo.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "echo \"Abra tests.html no navegador\" && exit 0"
+  },
+  "keywords": ["dashboard", "events", "earthquakes", "storms", "weather", "open-meteo", "leaflet"],
+  "author": "",
+  "license": "ISC"
+}

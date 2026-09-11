@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>Tests - Global Natural Events</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; background: #1a1a2e; color: #e0e0e0; }
+      h1 { color: #fff; }
+      pre { white-space: pre-wrap; line-height: 1.6; }
+      .pass { color: #047857; }
+      .fail { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <h1>Testes</h1>
+    <pre id="results"></pre>
+    <script type="module">
+      import { normalizeEarthquakeData, getMagnitudeStyle, normalizeEmscData, classifyDepth } from "./js/earthquakes.js";
+      import { normalizeStormData, normalizeGdacsStormData } from "./js/storms.js";
+      import { weatherCodeToDescription } from "./js/weather.js";
+      import { normalizeReverseGeocode } from "./js/geocoding.js";
+      import { calculateDistance, filterEvents, isCriticalEvent, FLOOD_TYPES, parseNumber, isValidCoordinate, escapeHtml } from "./js/utils.js";
+      import { mergeRegionalWinds, buildGridPoints } from "./js/winds.js";
+      import { kpLevel, classifyXRayFlux, normalizeXRayFlares, normalizeKpIndex } from "./js/solar.js";
+      import { trackCall, getQuotaInfo, checkQuotaReset } from "./js/quota.js";
+      import { filterFloodEvents } from "./js/floods.js";
+      import { normalizeVolcanoData, getVolcanoStyle } from "./js/volcanoes.js";
+
+      const out = document.querySelector("#results");
+      const results = [];
+      function test(name, fn) {
+        try {
+          fn();
+          results.push({ name, ok: true });
+        } catch (error) {
+          results.push({ name, ok: false, error: error.message });
+        }
+      }
+      function assert(condition, message) {
+        if (!condition) throw new Error(message || "Falhou");
+      }
+      function assertEqual(a, b, message) {
+        if (a !== b) throw new Error(message || `Esperado ${JSON.stringify(b)}, obtido ${JSON.stringify(a)}`);
+      }
+
+      test("normaliza terremotos validos", () => {
+        const events = normalizeEarthquakeData({ features: [{ id: "a", properties: { mag: 4.2, place: "X", time: 1000, url: "https://x.test" }, geometry: { coordinates: [10, 20, 30] } }] });
+        assert(events.length === 1);
+        assert(events[0].latitude === 20);
+        assert(events[0].depth === 30);
+      });
+
+      test("ignora terremotos invalidos", () => {
+        const events = normalizeEarthquakeData({ features: [{ id: "a", properties: { mag: null }, geometry: { coordinates: [999, 20] } }] });
+        assert(events.length === 0);
+      });
+
+      test("normaliza terremotos do EMSC", () => {
+        const events = normalizeEmscData({ features: [{
+          geometry: { coordinates: [121.45, -8.36, 10] },
+          properties: { unid: "20260824_0000187", mag: 3.7, flynn_region: "FLORES REGION", lat: -8.36, lon: 121.45, depth: 10, time: "2026-08-24T13:38:41.0Z" }
+        }] });
+        assert(events.length === 1);
+        assert(events[0].magnitude === 3.7);
+        assert(events[0].source === "EMSC");
+      });
+
+      test("normaliza ciclones do GDACS", () => {
+        const events = normalizeGdacsStormData({ features: [{
+          geometry: { type: "Point", coordinates: [-174.8, 33.3] },
+          properties: { eventid: "1001303", episodeid: "48", eventname: "LALA-26", alertlevel: "Green", latitude: "33.3", longitude: "-174.8", todate: "24 Aug 2026 09:00:00", link: "https://x.test" }
+        }] });
+        assert(events.length === 1);
+        assert(events[0].type === "storm");
+        assert(events[0].source === "GDACS");
+        assert(events[0].category.includes("Alerta Green"));
+      });
+
+      test("normaliza tempestades mantendo posicao mais recente", () => {
+        const data = { features: [
+          { properties: { id: "s1", title: "Storm", date: "2026-01-01T00:00:00Z", categories: [{ id: "severeStorms", title: "Severe Storms" }] }, geometry: { type: "Point", coordinates: [1, 2] } },
+          { properties: { id: "s1", title: "Storm", date: "2026-01-02T00:00:00Z", categories: [{ id: "severeStorms", title: "Severe Storms" }] }, geometry: { type: "Point", coordinates: [3, 4] } }
+        ] };
+        const events = normalizeStormData(data);
+        assert(events.length === 1);
+        assert(events[0].latitude === 4);
+      });
+
+      test("calcula distancia Haversine", () => {
+        const distance = calculateDistance(0, 0, 0, 1);
+        assert(distance > 110 && distance < 112);
+      });
+
+      test("filtra eventos por periodo e magnitude", () => {
+        const now = Date.parse("2026-01-02T00:00:00Z");
+        const events = [
+          { type: "earthquake", magnitude: 2.6, timestamp: "2026-01-01T23:00:00Z" },
+          { type: "earthquake", magnitude: 2.4, timestamp: "2026-01-01T23:00:00Z" },
+          { type: "storm", timestamp: "2025-12-20T00:00:00Z" },
+          { type: "wind", timestamp: "2026-01-01T23:00:00Z" }
+        ];
+        const filtered = filterEvents(events, { earthquakes: true, storms: true, winds: false, rain: false, floods: true, minMagnitude: 2.5, period: "6h" }, now);
+        assert(filtered.length === 1);
+        const withWinds = filterEvents(events, { earthquakes: true, storms: true, winds: true, rain: false, floods: true, minMagnitude: 2.5, period: "6h" }, now);
+        assert(withWinds.length === 2);
+      });
+
+      test("filtra eventos por periodo excluindo tempestades antigas", () => {
+        const now = Date.parse("2026-01-02T00:00:00Z");
+        const events = [
+          { type: "storm", timestamp: "2025-12-20T00:00:00Z" }
+        ];
+        const filtered = filterEvents(events, { earthquakes: true, storms: true, winds: false, rain: false, floods: true, minMagnitude: 2.5, period: "24h" }, now);
+        assert(filtered.length === 0);
+      });
+
+      test("gera grade regional de vento", () => {
+        const bounds = { getSouth: () => -25, getNorth: () => -22, getWest: () => -49, getEast: () => -46 };
+        const points = buildGridPoints(bounds, 8);
+        assert(points.length > 0);
+        assert(points.every(p => p.latitude >= -25 && p.latitude <= -22));
+      });
+
+      test("mescla ventos mantendo a base", () => {
+        const base = [{ id: "a", scope: "base" }, { id: "b", scope: "regional" }];
+        const regional = [{ id: "c", scope: "regional" }];
+        const merged = mergeRegionalWinds(base, regional);
+        assert(merged.length === 2);
+        assert(merged.some(w => w.id === "a"));
+        assert(merged.some(w => w.id === "c"));
+      });
+
+      test("classifica magnitude visual", () => {
+        assert(getMagnitudeStyle(6.1).level === "extreme");
+        assert(getMagnitudeStyle(3.2).level === "mid");
+      });
+
+      test("converte weather code", () => {
+        assert(weatherCodeToDescription(2) === "Parcialmente nublado");
+        assert(weatherCodeToDescription(999) === "Condicao indisponivel");
+      });
+
+      test("normaliza geocodificacao reversa", () => {
+        const location = normalizeReverseGeocode({
+          name: "Sao Paulo",
+          display_name: "Sao Paulo, Brasil",
+          address: { city: "Sao Paulo", state: "Sao Paulo", country: "Brasil" }
+        }, -23.55, -46.63);
+        assert(location.name === "Sao Paulo");
+        assert(location.region === "Sao Paulo, Brasil");
+      });
+
+      // === Novos testes: utils.js ===
+
+      test("parseNumber converte valores corretamente", () => {
+        assertEqual(parseNumber("3.14"), 3.14);
+        assertEqual(parseNumber("1,5"), 1.5);
+        assertEqual(parseNumber("abc"), null);
+        assertEqual(parseNumber(null), null);
+        assertEqual(parseNumber(undefined), null);
+        assertEqual(parseNumber(42), 42);
+      });
+
+      test("isValidCoordinate valida coordenadas", () => {
+        assert(isValidCoordinate(0, 0) === true);
+        assert(isValidCoordinate(-23.55, -46.63) === true);
+        assert(isValidCoordinate(91, 0) === false);
+        assert(isValidCoordinate(0, 181) === false);
+        assert(isValidCoordinate("abc", 0) === false);
+      });
+
+      test("escapeHtml escapa caracteres perigosos", () => {
+        const result = escapeHtml('<script>alert("xss")</script>');
+        assert(!result.includes("<"));
+        assert(!result.includes(">"));
+        assert(result.includes("&lt;"));
+      });
+
+      test("isCriticalEvent detecta terremotos criticos", () => {
+        assert(isCriticalEvent({ type: "earthquake", magnitude: 6.5, depth: 50 }) === true);
+        assert(isCriticalEvent({ type: "earthquake", magnitude: 5.5, depth: 40 }) === true);
+        assert(isCriticalEvent({ type: "earthquake", magnitude: 4.5, depth: 20 }) === true);
+        assert(isCriticalEvent({ type: "earthquake", magnitude: 3, depth: 10 }) === false);
+        assert(isCriticalEvent(null) === false);
+      });
+
+      test("isCriticalEvent detecta ventos criticos", () => {
+        assert(isCriticalEvent({ type: "wind", windSpeed: 95, windGusts: null }) === true);
+        assert(isCriticalEvent({ type: "wind", windSpeed: 50, windGusts: 95 }) === true);
+        assert(isCriticalEvent({ type: "wind", windSpeed: 60, windGusts: 70 }) === false);
+      });
+
+      test("isCriticalEvent detecta chuvas criticas", () => {
+        assert(isCriticalEvent({ type: "rain", precipitation: 15 }) === true);
+        assert(isCriticalEvent({ type: "rain", precipitation: 5 }) === false);
+      });
+
+      test("isCriticalEvent detecta enchentes criticas", () => {
+        assert(isCriticalEvent({ type: "river_flood", riskLevel: "high" }) === true);
+        assert(isCriticalEvent({ type: "flood_risk", riskLevel: "high" }) === true);
+        assert(isCriticalEvent({ type: "river_flood", riskLevel: "low" }) === false);
+      });
+
+      test("FLOOD_TYPES contem todos os tipos de inundacao", () => {
+        assert(FLOOD_TYPES.has("river_flood"));
+        assert(FLOOD_TYPES.has("flash_flood"));
+        assert(FLOOD_TYPES.has("urban_flood"));
+        assert(FLOOD_TYPES.has("flood_risk"));
+        assert(!FLOOD_TYPES.has("earthquake"));
+      });
+
+      // === Novos testes: solar.js ===
+
+      test("kpLevel classifica niveis Kp corretamente", () => {
+        assertEqual(kpLevel(9), "G5 - tempestade extrema");
+        assertEqual(kpLevel(7), "G3 - tempestade forte");
+        assertEqual(kpLevel(5), "G1 - tempestade fraca");
+        assertEqual(kpLevel(3), "campo instavel");
+        assertEqual(kpLevel(1), "calmo");
+        assertEqual(kpLevel(null), "indisponivel");
+      });
+
+      test("classifyXRayFlux classifica rajadas solares", () => {
+        const x = classifyXRayFlux(5e-4);
+        assertEqual(x.letter, "X");
+        assert(x.power > 1);
+        const m = classifyXRayFlux(5e-5);
+        assertEqual(m.letter, "M");
+        const c = classifyXRayFlux(5e-7);
+        assertEqual(c.letter, "C");
+        assertEqual(classifyXRayFlux(null)?.letter ?? null, null);
+      });
+
+      test("normalizeXRayFlares processa dados NOAA", () => {
+        const data = [
+          { energy: "0.1-0.8nm", flux: "1e-5", time_tag: "2026-01-01T00:00:00Z" },
+          { energy: "0.1-0.8nm", flux: "2e-4", time_tag: "2026-01-01T01:00:00Z" },
+          { energy: "other", flux: "1e-3", time_tag: "2026-01-01T02:00:00Z" }
+        ];
+        const result = normalizeXRayFlares(data);
+        assert(result.largest !== null);
+        assert(result.largest.classLabel.startsWith("X"));
+        assertEqual(result.mClassCount, 1);
+        assertEqual(result.xClassCount, 1);
+        assertEqual(result.sampleCount, 2);
+      });
+
+      test("normalizeKpIndex processa dados NOAA", () => {
+        const data = [
+          ["2026-01-01T00:00:00Z", "4.5", "3.0"],
+          ["2026-01-01T03:00:00Z", "5.0", "4.0"]
+        ];
+        const result = normalizeKpIndex(data);
+        assert(result !== null);
+        assertEqual(result.latest.kp, 4.5);
+        assertEqual(result.max24h, 5.0);
+      });
+
+      test("normalizeKpIndex retorna null para dados vazios", () => {
+        assertEqual(normalizeKpIndex([]), null);
+        assertEqual(normalizeKpIndex(null), null);
+      });
+
+      // === Novos testes: quota.js ===
+
+      test("trackCall incrementa contador", () => {
+        const info1 = getQuotaInfo();
+        const usgsBefore = info1.find(q => q.source === "usgs").calls;
+        trackCall("usgs");
+        const info2 = getQuotaInfo();
+        const usgsAfter = info2.find(q => q.source === "usgs").calls;
+        assertEqual(usgsAfter, usgsBefore + 1);
+      });
+
+      test("getQuotaInfo retorna todas as fontes", () => {
+        const info = getQuotaInfo();
+        const sources = info.map(q => q.source);
+        assert(sources.includes("usgs"));
+        assert(sources.includes("eonet"));
+        assert(sources.includes("weather"));
+        assert(sources.includes("inmet"));
+        assert(sources.includes("solar"));
+        assert(sources.includes("floods"));
+      });
+
+      test("quota weather tem limite 10000", () => {
+        const info = getQuotaInfo();
+        const weather = info.find(q => q.source === "weather");
+        assertEqual(weather.limit, 10000);
+      });
+
+      // === Novos testes: floods.js ===
+
+      test("filterFloodEvents filtra por nivel de risco", () => {
+        const events = [
+          { type: "river_flood", riskLevel: "high" },
+          { type: "flood_risk", riskLevel: "low" },
+          { type: "river_flood", riskLevel: "moderate" }
+        ];
+        const high = filterFloodEvents(events, "high");
+        assertEqual(high.length, 1);
+        assertEqual(high[0].riskLevel, "high");
+        const moderate = filterFloodEvents(events, "moderate");
+        assertEqual(moderate.length, 2);
+      });
+
+      test("filterFloodEvents retorna vazio para lista vazia", () => {
+        assertEqual(filterFloodEvents([], "low").length, 0);
+      });
+
+      // === Novos testes: earthquakes.js (geologia) ===
+
+      test("classifyDepth classifica profundidade corretamente", () => {
+        const shallow = classifyDepth(30);
+        assertEqual(shallow.zone, "shallow");
+        assert(shallow.context.includes("falhas superficiais"));
+        const intermediate = classifyDepth(150);
+        assertEqual(intermediate.zone, "intermediate");
+        assert(intermediate.context.includes("subducao"));
+        const deep = classifyDepth(500);
+        assertEqual(deep.zone, "deep");
+        assertEqual(classifyDepth(null).zone, "unknown");
+      });
+
+      test("terremotos normalizados incluem campos geologicos", () => {
+        const events = normalizeEarthquakeData({ features: [{ id: "g1", properties: { mag: 5.5, place: "Teste", time: 1000, tsunami: 1, sig: 500 }, geometry: { coordinates: [-70, -33, 80] } }] });
+        assert(events.length === 1);
+        assert(events[0].depthInfo.zone === "shallow");
+        assert(events[0].tsunami === true);
+        assert(events[0].significance === 500);
+        assert(events[0].tectonicContext.includes("Nazca"));
+      });
+
+      test("normaliza vulcoes validos", () => {
+        const events = normalizeVolcanoData({ features: [{
+          properties: { name: "Popocatepetl", alert_level: "Watch", elevation: 5426, country: "Mexico", region: "Mexico-Guatemala", type: "Stratovolcano" },
+          geometry: { type: "Point", coordinates: [-98.6224, 19.023] }
+        }] });
+        assert(events.length === 1);
+        assertEqual(events[0].type, "volcano");
+        assertEqual(events[0].title, "Popocatepetl");
+        assertEqual(events[0].alertLevel, "Watch");
+        assertEqual(events[0].severity, "watch");
+        assertEqual(events[0].source, "USGS VHP");
+      });
+
+      test("ignora vulcoes com coordenadas invalidas", () => {
+        const events = normalizeVolcanoData({ features: [{
+          properties: { name: "Teste" },
+          geometry: { type: "Point", coordinates: [999, 200] }
+        }] });
+        assertEqual(events.length, 0);
+      });
+
+      test("normaliza vulcoes com alerta Warning", () => {
+        const events = normalizeVolcanoData({ features: [{
+          properties: { name: "Etna", alert_level: "Warning", country: "Italia" },
+          geometry: { type: "Point", coordinates: [15.0, 37.75] }
+        }] });
+        assertEqual(events[0].severity, "warning");
+      });
+
+      test("getVolcanoStyle retorna cores por nivel", () => {
+        const warning = getVolcanoStyle("Warning");
+        assertEqual(warning.color, "#ff3b30");
+        assertEqual(warning.level, "warning");
+        const watch = getVolcanoStyle("Watch");
+        assertEqual(watch.color, "#ffbf47");
+        const normal = getVolcanoStyle("Normal");
+        assertEqual(normal.color, "#34c759");
+      });
+
+      test("isCriticalEvent detecta vulcoes criticos", () => {
+        assert(isCriticalEvent({ type: "volcano", alertLevel: "Warning" }) === true);
+        assert(isCriticalEvent({ type: "volcano", alertLevel: "Watch" }) === true);
+        assert(isCriticalEvent({ type: "volcano", alertLevel: "Advisory" }) === false);
+        assert(isCriticalEvent({ type: "volcano", alertLevel: "Normal" }) === false);
+      });
+
+      test("filterEvents filtra por tipo volcano", () => {
+        const now = Date.now();
+        const events = [
+          { type: "volcano", alertLevel: "Watch", timestamp: new Date().toISOString() },
+          { type: "earthquake", magnitude: 4, timestamp: new Date().toISOString() }
+        ];
+        const withVolcanoes = filterEvents(events, { earthquakes: true, storms: true, winds: true, rain: true, floods: true, fires: true, volcanoes: true, minMagnitude: 2.5, period: "24h" }, now);
+        assertEqual(withVolcanoes.length, 2);
+        const withoutVolcanoes = filterEvents(events, { earthquakes: true, storms: true, winds: true, rain: true, floods: true, fires: true, volcanoes: false, minMagnitude: 2.5, period: "24h" }, now);
+        assertEqual(withoutVolcanoes.length, 1);
+      });
+
+      out.innerHTML = results.map(result => `${result.ok ? "PASS" : "FAIL"} ${result.name}${result.error ? ` - ${result.error}` : ""}`).join("\n");
+      out.className = results.every(result => result.ok) ? "pass" : "fail";
+    </script>
+  </body>
+</html>
